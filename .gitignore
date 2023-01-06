@@ -1,0 +1,8 @@
+.vscode/
+.venv/
+.dccache
+config/
+debug.log
+*.bat
+!install.bat
+**/__pycache__/**
