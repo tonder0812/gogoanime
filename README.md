@@ -20,6 +20,8 @@ Run the install script to create the config folder
 
 The `-c` flag makes the program run continually (every five minutes)
 
+Use the up and down arrows to scroll
+
 ## Config
 
 The config folder has 4 files inside:
