@@ -186,9 +186,10 @@ class Printer:
         for line in range(i, self.height):
             msg += " "*(self.width)
         print(msg, end="", flush=True)
-        move_cursor(*last_cursor)
         if should_move_cursor:
             move_cursor(0, 0)
+        else:
+            move_cursor(*last_cursor)
 
     def set_delay(self, delay: float) -> Self:
         with self._lock:
