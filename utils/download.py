@@ -4,7 +4,7 @@ import subprocess
 import threading
 import time
 import traceback
-from typing import Any, Callable, Generator
+from typing import Any, Callable, Generator, TypeVar
 
 import m3u8
 import requests
@@ -26,7 +26,7 @@ def http_builder(url: str, headers: dict[str, str | bytes] | None = None) -> Src
             content_length = r.headers.get('content-length')
             if content_length is not None:
                 total_length = int(content_length)
-                total = (total_length // 1024) + 1
+                total = math.ceil(total_length / 1024)
             else:
                 total = -1
 
@@ -81,6 +81,8 @@ def m3u8_builder(playlist_url: str, headers: dict[str, str | bytes] | None = Non
 _download_N: int = 0
 _download_N_lock: threading.Lock = threading.Lock()
 
+T = TypeVar("T")
+
 
 def download_file(*, src: SrcType,
                   folder: str,
@@ -90,8 +92,11 @@ def download_file(*, src: SrcType,
                   max_tries: int = 10,
                   printr: PrinterType | None = None,
                   size_digits: int = 6,
-                  cb: Callable[[str, bool, Any], None] | None = None,
-                  cb_data: Any = None
+                  cb: (
+                      Callable[[str, bool, T | None, str], None] | None
+                  ) = None,
+                  cb_data: T | None = None,
+                  download_id: str | None = None,
                   ) -> tuple[str, bool]:
     global _download_N
     if desc == "":
@@ -99,9 +104,12 @@ def download_file(*, src: SrcType,
     temp_filename = os.path.join(folder, filename + ".part")
     local_filename = os.path.join(folder, filename)
     success = False
-    with _download_N_lock:
-        _download_N += 1
-        download_id = "Download_N" + str(_download_N)
+    repeating_download = True
+    if download_id is None:
+        with _download_N_lock:
+            _download_N += 1
+            download_id = "Download_N" + str(_download_N)
+        repeating_download = False
     file_stats: dict[str, float | str] = {
         "progress": 0,
         "max": 0,
@@ -115,15 +123,16 @@ def download_file(*, src: SrcType,
         printr = FakePrinter()
 
     printr.set(download_id, file_stats)
-    msg = f"{desc}:"
-    msg += "{" + download_id + "[progress]:" + str(size_digits) + "d}|"
-    msg += "{" + download_id + "[max]:" + str(size_digits) + "d}"
-    msg += "({" + download_id + "[perc]:6.2f}%)"
-    msg += "[{" + download_id + "[try]}] "
-    msg += "{" + download_id + "[timer]} "
-    msg += "{" + download_id + "[estimated]} "
-    msg += "Last changed at {" + download_id + "[updated]}\n"
-    printr.add_desc(msg)
+    if not repeating_download:
+        msg = "{" + download_id + "[progress]:" + str(size_digits) + "d}|"
+        msg += "{" + download_id + "[max]:" + str(size_digits) + "d}"
+        msg += "({" + download_id + "[perc]:6.2f}%)"
+        msg += "[{" + download_id + "[try]}] "
+        msg += "{" + download_id + "[timer]} "
+        msg += "{" + download_id + "[estimated]} "
+        msg += "Last changed at {" + download_id + "[updated]}\n"
+        printr.print(f"{desc}:", end="")
+        printr.add_desc(msg)
 
     segments_processed = 0
     start = time.perf_counter()
@@ -172,6 +181,8 @@ def download_file(*, src: SrcType,
                 t.join()
             # printr.print(e)
             # printr.print(traceback.format_exc())
+
+            debug_log("========================================================")
             debug_log(e)
             debug_log(traceback.format_exc())
             file_stats["progress"] = 0
@@ -215,5 +226,6 @@ def download_file(*, src: SrcType,
         printr.set(download_id, file_stats)
 
     if cb:
-        cb(local_filename, success, cb_data)
+        cb(local_filename, success, cb_data, download_id)
+
     return (temp_filename, success)
