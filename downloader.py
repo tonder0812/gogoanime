@@ -6,7 +6,7 @@ import requests
 
 from anime import AnimeInfo
 from config import user_end_download, user_start_downloading
-from episode import ep_order, get_episode_to_download
+from episode import episode_order, get_episodes_to_download
 from printer import FakePrinter
 from printer.printer import PrinterType
 from saving import Processing
@@ -108,7 +108,7 @@ def download_anime(
 ):
 
     with processing.lock:
-        links, links_to_download = get_episode_to_download(
+        links, links_to_download = get_episodes_to_download(
             session,
             infos[anime_link].anime_id,
             watched_eps +
@@ -123,7 +123,7 @@ def download_anime(
     with processing.lock:
         processing[anime_link] = processing.get(anime_link, {})
 
-    eps: list[str] = list(sorted(links.keys(), key=ep_order))
+    eps: list[str] = list(sorted(links.keys(), key=episode_order))
 
     p.print("\n"+anime_name)
     p.print(f"{len(eps)} ep(s):")

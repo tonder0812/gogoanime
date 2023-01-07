@@ -1,6 +1,6 @@
 
 from .anime import AnimeParser
-from .epList import EpListParser
-from .videoLink import VideoLinkParser
+from .ep_list import EpListParser
+from .video_link import VideoLinkParser
 
 __all__ = ["AnimeParser", "EpListParser", "VideoLinkParser"]

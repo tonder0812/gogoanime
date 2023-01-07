@@ -10,11 +10,11 @@ from urwid.util import str_util
 if __name__ == "__main__":
     from console import (ENABLE_EXTENDED_FLAGS, ENABLE_QUICK_EDIT_MODE,
                          is_focused, update_console_mode)
-    from fakePrinter import FakePrinter
+    from fake_printer import FakePrinter
 else:
     from printer.console import (ENABLE_EXTENDED_FLAGS, ENABLE_QUICK_EDIT_MODE,
                                  is_focused, update_console_mode)
-    from printer.fakePrinter import FakePrinter
+    from printer.fake_printer import FakePrinter
 
 
 def execute_ansii_escape_sequence(sequence: str):
