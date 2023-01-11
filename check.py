@@ -86,14 +86,6 @@ def raise_for_quit(p: PrinterType):
 
 def main():
     p: PrinterType = Printer()
-    p.print("a\n"*300)
-    p.input()
-    time.sleep(10)
-    p.stop()
-
-
-def main2():
-    p: PrinterType = Printer()
 
     session = requests.Session()
     session.cookies.update(load_cookies())
