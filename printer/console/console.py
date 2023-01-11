@@ -1,4 +1,4 @@
-import sys
+import os
 from enum import Enum
 
 
@@ -105,7 +105,7 @@ class Mouse:
         return f"Mouse {self.position},{self.scroll} [buttons = {self.buttons}, type = {self.type_}, modifiers = [{modifiers(self.capslock ,self.enhanced ,self.left_alt ,self.left_ctrl ,self.numlock ,self.right_alt ,self.right_ctrl ,self.scrolllock ,self.shift)}]]"
 
 
-if sys.platform == "win32":
+if os.name == "nt":
     from .windows_console import (clear_screen, poll_events, get_size,
                                   hide_cursor, init, is_focused, move_cursor,
                                   set_text, show_cursor, stop)
