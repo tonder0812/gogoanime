@@ -1,5 +1,23 @@
+from .fake_printer import FakePrinter as _FakePrinter
+from .printer import Printer as _Printer
 
-from printer.fake_printer import FakePrinter
-from printer.printer import Printer, PrinterType
+__all__ = ["Printer", "FakePrinter", "PrinterType"]
+_printer: _Printer | None = None
+_fake_printer: _FakePrinter | None = None
 
-__all__ = ["PrinterType", "Printer", "FakePrinter"]
+
+def Printer() -> _Printer:
+    global _printer
+    if _printer is None:
+        _printer = _Printer()
+    return _printer
+
+
+def FakePrinter() -> _FakePrinter:
+    global _fake_printer
+    if _fake_printer is None:
+        _fake_printer = _FakePrinter()
+    return _fake_printer
+
+
+PrinterType = _Printer | _FakePrinter

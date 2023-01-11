@@ -10,8 +10,7 @@ from anime import AnimeInfo, get_anime_info
 from config import download_path, quit_location
 from cookies import load_cookies
 from downloader import download_anime
-from printer import Printer
-from printer.printer import PrinterType
+from printer import Printer, PrinterType
 from saving import Processing
 from saving import get_watching as _get_watching
 from saving import with_processing
@@ -86,7 +85,15 @@ def raise_for_quit(p: PrinterType):
 
 
 def main():
-    p: Printer = Printer()
+    p: PrinterType = Printer()
+    p.print("a\n"*300)
+    p.input()
+    time.sleep(10)
+    p.stop()
+
+
+def main2():
+    p: PrinterType = Printer()
 
     session = requests.Session()
     session.cookies.update(load_cookies())

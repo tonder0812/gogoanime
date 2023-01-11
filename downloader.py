@@ -8,8 +8,7 @@ import requests
 from anime import AnimeInfo, get_anime_info
 from config import user_end_download, user_start_downloading
 from episode import episode_order, get_episodes_to_download
-from printer import FakePrinter
-from printer.printer import PrinterType
+from printer import FakePrinter, PrinterType
 from saving import Processing
 from utils.download import download_file, http_builder
 from utils.format import generate_filenames, normalize_filename
