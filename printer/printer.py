@@ -18,7 +18,7 @@ class Printer:
     renderThread: Thread
     stopped: bool = False
     waiting: bool = False
-    delay: float = 0.1
+    delay: float = 0
     height: int = 0
     width: int = 0
 
