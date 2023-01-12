@@ -83,6 +83,7 @@ def download_episode(
         eps: list[str],
 
         p: PrinterType | None = None,
+        session: requests.Session | None = None,
         threads: list[threading.Thread] | None = None,
         processing: Processing | None = None,
 ):
@@ -105,11 +106,11 @@ def download_episode(
     t = threading.Thread(target=download_file,
                          args=[],
                          kwargs={
-                             "src": http_builder(download_url),
+                             "src": http_builder(download_url, session=session),
                              "folder": anime_folder,
                              "filename": filename,
                              "desc": filenameDesc,
-                             "max_tries": 100,
+                             "max_tries": 5,
                              "printr": p,
                              "size_digits": 6,
                              "cb": download_callback(anime_link, ep, processing),
@@ -183,6 +184,7 @@ def download_anime(
             eps=eps,
 
             p=p,
+            session=session,
             threads=threads,
             processing=processing,
         )

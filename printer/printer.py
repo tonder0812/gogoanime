@@ -18,9 +18,10 @@ class Printer:
     renderThread: Thread
     stopped: bool = False
     waiting: bool = False
-    delay: float = 0
+    delay: float = 0.01
     height: int = 0
     width: int = 0
+    formated: bool = False
 
     scroller = Scroller()
 
@@ -37,6 +38,7 @@ class Printer:
 
     def format_msg(self) -> None:
         with self._lock:
+            self.formated = True
             self.msg = self.desc.format(**self.data)
 
     def resume(self) -> Self:
@@ -87,6 +89,8 @@ class Printer:
 
     def __render(self, should_set_cursor: bool = False) -> None:
         with self._lock:
+            if not self.formated:
+                self.format_msg()
             velocity = 0
             while (event := console.poll_events()) is not None:
                 if isinstance(event, console.Key):
@@ -119,19 +123,20 @@ class Printer:
         return self
 
     def print(self, *args: Any, sep: str = " ", end: str = "\n", escape: bool = True) -> Self:
+        arg = sep.join(map(str, args))
+        if escape:
+            arg = arg.replace("{", "{{").replace("}", "}}")
+            end = end.replace("{", "{{").replace("}", "}}")
+        desc = arg + end
         with self._lock:
-            arg = sep.join(map(str, args))
-            if escape:
-                arg = arg.replace("{", "{{").replace("}", "}}")
-                end = end.replace("{", "{{").replace("}", "}}")
-            self.desc += arg + end
-            self.format_msg()
+            self.desc += desc
+            self.formated = False
         return self
 
     def set(self, name: str, data: Any) -> Self:
         with self._lock:
             self.data[name] = data
-            self.format_msg()
+            self.formated = False
         return self
 
     def get(self, name: str, default: Any = None) -> Any:
@@ -143,14 +148,14 @@ class Printer:
         desc = sep.join(map(str, args))
         with self._lock:
             self.desc = desc
-            self.format_msg()
+            self.formated = False
         return self
 
     def add_desc(self, *args: Any, sep: str = " ") -> Self:
         desc = sep.join(map(str, args))
         with self._lock:
             self.desc += desc
-            self.format_msg()
+            self.formated = False
         return self
 
     def get_desc(self) -> str:

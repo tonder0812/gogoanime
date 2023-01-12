@@ -16,11 +16,16 @@ from utils.prediction import Prediction
 
 SrcType = Callable[[int], tuple[Generator[Any, None, None],
                                 int, int, Callable[[str, str], None]]]
+# deepcode ignore MissingClose: <please specify a reason of ignoring this>
+defaultSession = requests.Session()
 
 
-def http_builder(url: str, headers: dict[str, str | bytes] | None = None) -> SrcType:
+def http_builder(url: str, headers: dict[str, str | bytes] | None = None, session: requests.Session | None = None) -> SrcType:
+    if session is None:
+        session = defaultSession
+
     def src(_: int):
-        with requests.head(url, timeout=3 * 60, headers=headers, allow_redirects=True) as r:
+        with session.head(url, timeout=3 * 60, headers=headers, allow_redirects=True) as r:
             # debug_log(url + " status_code: " + str(r.status_code))
             r.raise_for_status()
             content_length = r.headers.get('content-length')
@@ -31,7 +36,7 @@ def http_builder(url: str, headers: dict[str, str | bytes] | None = None) -> Src
                 total = -1
 
         def stream():
-            with requests.get(url, stream=True, timeout=3 * 60, headers=headers, allow_redirects=True) as r:
+            with session.get(url, stream=True, timeout=3 * 60, headers=headers, allow_redirects=True) as r:
                 r.raise_for_status()
                 for chunck in r.iter_content(chunk_size=1024):
                     yield chunck
@@ -41,7 +46,10 @@ def http_builder(url: str, headers: dict[str, str | bytes] | None = None) -> Src
     return src
 
 
-def m3u8_builder(playlist_url: str, headers: dict[str, str | bytes] | None = None, p: PrinterType | None = None) -> SrcType:
+def m3u8_builder(playlist_url: str, headers: dict[str, str | bytes] | None = None, session: requests.Session | None = None) -> SrcType:
+    if session is None:
+        session = defaultSession
+
     def get_real_url(url: str):
         return url
         # playlists = m3u8.load(uri=url, headers=headers).playlists
@@ -61,17 +69,11 @@ def m3u8_builder(playlist_url: str, headers: dict[str, str | bytes] | None = Non
 
     real_url = get_real_url(playlist_url)
     playlist = m3u8.load(uri=real_url, headers=headers)
-    if p:
-        p.print(playlist.segments)
     n = len(playlist.segments)
 
     def stream(segments_processed: int):
-        i = segments_processed
         for seg in playlist.segments[segments_processed:]:
-            if p:
-                p.print("processing segment", i)
-                i += 1
-            with requests.get(seg.absolute_uri, headers=headers, stream=False, timeout=3 * 60) as r:
+            with session.get(seg.absolute_uri, headers=headers, stream=False, timeout=3 * 60) as r:
                 r.raise_for_status()
                 data = r.content
                 yield data
@@ -171,7 +173,6 @@ def download_file(*, src: SrcType,
                     printr.set(download_id, file_stats)
                     if chunk:
                         f.write(chunk)
-                        f.flush()
             success = segments_processed > 0 and (
                 True if total < 0 else segments_processed == total)
             break
