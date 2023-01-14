@@ -1,7 +1,8 @@
-import threading
 import time
 from threading import Thread
-from typing import Any, Self
+from typing import Self
+from typing_extensions import override
+from printer.abstract_printer import AbstractPrinter
 
 from printer.scroller import Scroller
 
@@ -10,43 +11,34 @@ from .console import console
 from .console.utils import calc_rows, remove_control_chars
 
 
-class Printer:
-    _lock: threading.RLock = threading.RLock()
-    data: dict[str, Any] = {}
-    desc: str = ""
-    msg: str = ""
-    renderThread: Thread
-    stopped: bool = False
-    waiting: bool = False
-    delay: float = 0.01
-    height: int = 0
-    width: int = 0
-    formated: bool = False
-
-    scroller = Scroller()
+class Printer(AbstractPrinter):
 
     def __init__(self):
+        super().__init__()
+
+        self.stopped: bool = False
+        self.waiting: bool = False
+        self.height: int = 0
+        self.width: int = 0
+        self.scroller = Scroller()
+
         console.init()
         self.renderThread = Thread(target=self.render)
         self.renderThread.start()
 
     def wait(self) -> Self:
         with self._lock:
-            self.__render(True)
+            self.a__render(True)
             self.waiting = True
         return self
-
-    def format_msg(self) -> None:
-        with self._lock:
-            self.formated = True
-            self.msg = self.desc.format(**self.data)
 
     def resume(self) -> Self:
         with self._lock:
             self.waiting = False
-            self.__render()
+            self.a__render()
         return self
 
+    @override
     def input(self, question: str = "") -> str:
         with self._lock:
             self.print(question, end="")
@@ -69,26 +61,27 @@ class Printer:
             self.resume()
         return out
 
-    def stop(self) -> Self:
+    @override
+    def stop(self):
         with self._lock:
             self.stopped = True
 
         self.renderThread.join()
         console.stop()
         print(remove_control_chars(self.msg))
-        return self
 
     def render(self) -> None:
         while True:
-            with self._lock:
-                if not self.waiting:
-                    self.__render()
-                if self.stopped:
-                    return
+
+            if not self.waiting:
+                self.a__render()
+
+            if self.stopped:
+                return
             time.sleep(self.delay)
 
-    def __render(self, should_set_cursor: bool = False) -> None:
-        with self._lock:
+    def a__render(self, should_set_cursor: bool = False) -> None:
+        with self._lock(1):
             if not self.formated:
                 self.format_msg()
             velocity = 0
@@ -116,48 +109,3 @@ class Printer:
             # Render message
             console.set_text(self.msg, int(
                 self.scroller.position), should_set_cursor)
-
-    def set_delay(self, delay: float) -> Self:
-        with self._lock:
-            self.delay = delay
-        return self
-
-    def print(self, *args: Any, sep: str = " ", end: str = "\n", escape: bool = True) -> Self:
-        arg = sep.join(map(str, args))
-        if escape:
-            arg = arg.replace("{", "{{").replace("}", "}}")
-            end = end.replace("{", "{{").replace("}", "}}")
-        desc = arg + end
-        with self._lock:
-            self.desc += desc
-            self.formated = False
-        return self
-
-    def set(self, name: str, data: Any) -> Self:
-        with self._lock:
-            self.data[name] = data
-            self.formated = False
-        return self
-
-    def get(self, name: str, default: Any = None) -> Any:
-        with self._lock:
-            data = self.data.get(name, default)
-            return data
-
-    def set_desc(self, *args: Any, sep: str = " ") -> Self:
-        desc = sep.join(map(str, args))
-        with self._lock:
-            self.desc = desc
-            self.formated = False
-        return self
-
-    def add_desc(self, *args: Any, sep: str = " ") -> Self:
-        desc = sep.join(map(str, args))
-        with self._lock:
-            self.desc += desc
-            self.formated = False
-        return self
-
-    def get_desc(self) -> str:
-        with self._lock:
-            return self.desc

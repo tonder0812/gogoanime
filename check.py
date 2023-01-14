@@ -10,7 +10,7 @@ from anime import AnimeInfo, get_anime_info
 from config import download_path, quit_location
 from cookies import load_cookies
 from downloader import download_anime
-from printer import Printer, PrinterType
+from printer import Printer, AbstractPrinter
 from saving import Processing
 from saving import get_watching as _get_watching
 from saving import with_processing
@@ -24,12 +24,12 @@ infos: dict[str, AnimeInfo] = {}
 
 
 @with_processing(processing)
-def set_processing(p: PrinterType):
+def set_processing(p: AbstractPrinter):
     p.set("processing", str(processing))
 
 
 @with_processing(processing)
-def get_watching(p: PrinterType, names: dict[str, str]) -> dict[str, list[str]]:
+def get_watching(p: AbstractPrinter, names: dict[str, str]) -> dict[str, list[str]]:
     res = _get_watching(names, processing)
     set_processing(p)
     return res
@@ -48,7 +48,7 @@ def update_info(session: requests.Session, anime_link: str):
 
 
 @ with_processing(processing)
-def check(p: PrinterType, session: requests.Session):
+def check(p: AbstractPrinter, session: requests.Session):
     watching = get_watching(p, names)
     for anime_link in watching:
         time.sleep(1)
@@ -73,7 +73,7 @@ def check(p: PrinterType, session: requests.Session):
         set_processing(p)
 
 
-def raise_for_quit(p: PrinterType):
+def raise_for_quit(p: AbstractPrinter):
     with open(quit_location, "r") as f:
         stop = f.read()
     if len(stop) > 0:
@@ -85,7 +85,7 @@ def raise_for_quit(p: PrinterType):
 
 
 def main():
-    p: PrinterType = Printer()
+    p = Printer()
 
     session = requests.Session()
     session.cookies.update(load_cookies())

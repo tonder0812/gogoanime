@@ -1,7 +1,8 @@
 from .fake_printer import FakePrinter as _FakePrinter
 from .printer import Printer as _Printer
+from .abstract_printer import AbstractPrinter
 
-__all__ = ["Printer", "FakePrinter", "PrinterType"]
+__all__ = ["Printer", "FakePrinter", "AbstractPrinter"]
 _printer: _Printer | None = None
 _fake_printer: _FakePrinter | None = None
 
@@ -18,6 +19,3 @@ def FakePrinter() -> _FakePrinter:
     if _fake_printer is None:
         _fake_printer = _FakePrinter()
     return _fake_printer
-
-
-PrinterType = _Printer | _FakePrinter

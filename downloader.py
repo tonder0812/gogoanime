@@ -8,13 +8,13 @@ import requests
 from anime import AnimeInfo, get_anime_info
 from config import user_end_download, user_start_downloading
 from episode import episode_order, get_episodes_to_download
-from printer import FakePrinter, PrinterType
+from printer import FakePrinter, AbstractPrinter
 from saving import Processing
 from utils.download import download_file, http_builder
 from utils.format import generate_filenames, normalize_filename
 
 
-def dowload_anime_logo_callback(_: str, success: bool, cb_data: tuple[str, str, requests.Session, PrinterType] | None, download_id: str):
+def dowload_anime_logo_callback(_: str, success: bool, cb_data: tuple[str, str, requests.Session, AbstractPrinter] | None, download_id: str):
     if success:
         return
     time.sleep(1)
@@ -34,7 +34,7 @@ def dowload_anime_logo_callback(_: str, success: bool, cb_data: tuple[str, str, 
                   )
 
 
-def dowload_anime_logo(p: PrinterType, session: requests.Session, infos: dict[str, AnimeInfo], anime_link: str, show_folder: str, threads: list[threading.Thread], minimize_print: bool = False) -> None:
+def dowload_anime_logo(p: AbstractPrinter, session: requests.Session, infos: dict[str, AnimeInfo], anime_link: str, show_folder: str, threads: list[threading.Thread], minimize_print: bool = False) -> None:
     image_link = "Logo already exists"
     show_info = infos[anime_link]
     if show_info.logo_url is None:
@@ -82,7 +82,7 @@ def download_episode(
         epN: int,
         eps: list[str],
 
-        p: PrinterType | None = None,
+        p: AbstractPrinter | None = None,
         session: requests.Session | None = None,
         threads: list[threading.Thread] | None = None,
         processing: Processing | None = None,
@@ -129,7 +129,7 @@ def download_anime(
         infos: dict[str, AnimeInfo],
         names: dict[str, str],
 
-        p: PrinterType,
+        p: AbstractPrinter,
         threads: list[threading.Thread],
         processing: Processing,
 ):

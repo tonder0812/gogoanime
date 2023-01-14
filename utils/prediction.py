@@ -1,7 +1,7 @@
 import threading
 import time
 
-from printer import PrinterType
+from printer import AbstractPrinter
 from utils.format import format_time
 
 
@@ -39,9 +39,9 @@ class EMA:
 
 class Prediction:
 
-    def __init__(self, p: PrinterType, fileVar: str, total: int):
+    def __init__(self, p: AbstractPrinter, fileVar: str, total: int):
         self._running: bool = True
-        self.p: PrinterType = p
+        self.p = p
         self.download_id: str = fileVar
         self.total: int = total
         self.lock: threading.Lock = threading.Lock()

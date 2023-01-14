@@ -9,7 +9,7 @@ from typing import Any, Callable, Generator, TypeVar
 import m3u8
 import requests
 
-from printer import FakePrinter, PrinterType
+from printer import FakePrinter, AbstractPrinter
 from utils.debugging import debug_log
 from utils.format import delta_time_str, format_time
 from utils.prediction import Prediction
@@ -92,7 +92,7 @@ def download_file(*, src: SrcType,
                   desc: str = "",
                   remove_old: bool = True,
                   max_tries: int = 10,
-                  printr: PrinterType | None = None,
+                  printr: AbstractPrinter | None = None,
                   size_digits: int = 6,
                   cb: (
                       Callable[[str, bool, T | None, str], None] | None
@@ -133,8 +133,9 @@ def download_file(*, src: SrcType,
         msg += "{" + download_id + "[timer]} "
         msg += "{" + download_id + "[estimated]} "
         msg += "Last changed at {" + download_id + "[updated]}\n"
-        printr.print(f"{desc}:", end="")
-        printr.add_desc(msg)
+        with printr.get_lock():
+            printr.print(f"{desc}:", end="")
+            printr.add_desc(msg)
 
     segments_processed = 0
     start = time.perf_counter()
