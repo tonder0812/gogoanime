@@ -150,7 +150,6 @@ if os.name == "nt":
         _fields_ = [("EventType", WORD), ("Event", Event)]
 
         def __str__(self) -> str:
-            event = "ola"
             if self.EventType == FOCUS_EVENT:
                 event = str(self.Event.FocusEvent)
             elif self.EventType == KEY_EVENT:
@@ -161,6 +160,8 @@ if os.name == "nt":
                 event = str(self.Event.MouseEvent)
             elif self.EventType == WINDOW_BUFFER_SIZE_EVENT:
                 event = str(self.Event.WindowBufferSizeEvent)
+            else:
+                event = "Unknown event"
 
             return f"{translation_table[self.EventType]} [{event}]"
 
