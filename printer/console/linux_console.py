@@ -1,5 +1,5 @@
 
-from .console import Key, Mouse
+from .common import Key, Mouse
 
 
 def move_cursor(y: int, x: int):

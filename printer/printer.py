@@ -7,8 +7,8 @@ from printer.abstract_printer import AbstractPrinter
 from printer.scroller import Scroller
 
 
-from .console import console
 from .console.utils import calc_rows, remove_control_chars
+import printer.console as console
 
 
 class Printer(AbstractPrinter):

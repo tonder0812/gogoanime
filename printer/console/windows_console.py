@@ -1,48 +1,42 @@
 import os
-if os.name=="nt":
+if os.name == "nt":
     import ctypes
     from ctypes import byref
     from ctypes.wintypes import DWORD
     from subprocess import STD_INPUT_HANDLE
 
-    from .console import Key, Mouse, MouseType
+    from .common import Key, Mouse, MouseType
     from .utils import length, remove_control_chars, split_lines_width
     from .windows_api import (DISABLE_NEWLINE_AUTO_RETURN, ENABLE_EXTENDED_FLAGS,
-                            ENABLE_MOUSE_INPUT, ENABLE_PROCESSED_INPUT,
-                            ENABLE_QUICK_EDIT_MODE,
-                            ENABLE_VIRTUAL_TERMINAL_PROCESSING,
-                            ENABLE_WINDOW_INPUT, disable_scroll, enable_scroll,
-                            get_console_mode, kernel, set_console_mode)
+                              ENABLE_MOUSE_INPUT, ENABLE_PROCESSED_INPUT,
+                              ENABLE_QUICK_EDIT_MODE,
+                              ENABLE_VIRTUAL_TERMINAL_PROCESSING,
+                              ENABLE_WINDOW_INPUT, disable_scroll, enable_scroll,
+                              get_console_mode, kernel, set_console_mode)
     from .windows_events import (CAPSLOCK_ON, DOUBLE_CLICK, ENHANCED_KEY,
-                                FOCUS_EVENT, INPUT_RECORD, KEY_EVENT,
-                                LEFT_ALT_PRESSED, LEFT_CTRL_PRESSED, MENU_EVENT,
-                                MOUSE_EVENT, MOUSE_HWHEELED, MOUSE_MOVED,
-                                MOUSE_WHEELED, NUMLOCK_ON, RIGHT_ALT_PRESSED,
-                                RIGHT_CTRL_PRESSED, SCROLLLOCK_ON, SHIFT_PRESSED,
-                                WINDOW_BUFFER_SIZE_EVENT)
+                                 FOCUS_EVENT, INPUT_RECORD, KEY_EVENT,
+                                 LEFT_ALT_PRESSED, LEFT_CTRL_PRESSED, MENU_EVENT,
+                                 MOUSE_EVENT, MOUSE_HWHEELED, MOUSE_MOVED,
+                                 MOUSE_WHEELED, NUMLOCK_ON, RIGHT_ALT_PRESSED,
+                                 RIGHT_CTRL_PRESSED, SCROLLLOCK_ON, SHIFT_PRESSED,
+                                 WINDOW_BUFFER_SIZE_EVENT)
     from .windows_vk import get_key_count, get_name, process_key_event
-
 
     def execute_ansii_escape_sequence(sequence: str):
         print("\033"+sequence, end="", flush=True)
 
-
     def move_cursor(y: int, x: int):
         execute_ansii_escape_sequence("[%d;%dH" % (y, x))
-
 
     def hide_cursor():
         execute_ansii_escape_sequence("[?25l")
 
-
     def show_cursor():
         execute_ansii_escape_sequence("[?25h")
-
 
     def clear_screen():
         move_cursor(1, 1)
         execute_ansii_escape_sequence("[J")
-
 
     def init() -> None:
         global original_out_mode, original_in_mode, new_out_mode, new_in_mode
@@ -59,7 +53,7 @@ if os.name=="nt":
 
         new_out_mode = original_out_mode | requested_out_mode
         new_in_mode = (original_in_mode |
-                    requested_in_modes) & ~ENABLE_QUICK_EDIT_MODE
+                       requested_in_modes) & ~ENABLE_QUICK_EDIT_MODE
 
         set_console_mode(new_out_mode, True)
         set_console_mode(new_in_mode, False)
@@ -67,20 +61,16 @@ if os.name=="nt":
         hide_cursor()
         clear_screen()
 
-
     def stop():
         execute_ansii_escape_sequence("[?1049l")
         enable_scroll()
         set_console_mode(original_out_mode, True)
         set_console_mode(original_in_mode, False)
 
-
     focus = True
-
 
     def is_focused() -> bool:
         return focus
-
 
     def poll_events() -> Key | Mouse | None:
         global terminal_size, focus
@@ -99,7 +89,7 @@ if os.name=="nt":
 
         if save_ip.EventType == WINDOW_BUFFER_SIZE_EVENT:
             terminal_size = (save_ip.Event.WindowBufferSizeEvent.dwSize.Y,
-                            save_ip.Event.WindowBufferSizeEvent.dwSize.X)
+                             save_ip.Event.WindowBufferSizeEvent.dwSize.X)
             return poll_events()
         if save_ip.EventType == FOCUS_EVENT:
             focus = save_ip.Event.FocusEvent.bSetFocus
@@ -164,13 +154,10 @@ if os.name=="nt":
             )
         assert False, "UNREACHABLE"
 
-
     terminal_size = os.get_terminal_size().lines, os.get_terminal_size().columns
-
 
     def get_size() -> tuple[int, int]:
         return terminal_size
-
 
     def set_text(text: str, start: int = 0, should_set_cursor: bool = False):
         rows, cols = get_size()

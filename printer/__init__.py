@@ -1,6 +1,6 @@
+from .abstract_printer import AbstractPrinter
 from .fake_printer import FakePrinter as _FakePrinter
 from .printer import Printer as _Printer
-from .abstract_printer import AbstractPrinter
 
 __all__ = ["Printer", "FakePrinter", "AbstractPrinter"]
 _printer: _Printer | None = None

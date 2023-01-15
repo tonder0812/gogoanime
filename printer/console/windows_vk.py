@@ -2,7 +2,7 @@
 Taken from PDCurses (https://github.com/wmcbrine/PDCurses) and then adapted
 """
 import os
-if os.name=="nt":
+if os.name == "nt":
     from .windows_events import ENHANCED_KEY, KEY_EVENT_RECORD, LEFT_ALT_PRESSED, LEFT_CTRL_PRESSED, RIGHT_ALT_PRESSED, RIGHT_CTRL_PRESSED, SHIFT_PRESSED
     from .windows_api import user32
 
@@ -265,7 +265,6 @@ if os.name=="nt":
     KEY_MIN = KEY_BREAK
     KEY_MAX = KEY_SDOWN
 
-
     names = [
         "KEY_BREAK", "KEY_DOWN", "KEY_UP", "KEY_LEFT", "KEY_RIGHT",
         "KEY_HOME", "KEY_BACKSPACE", "KEY_F0", "KEY_F(1)", "KEY_F(2)",
@@ -328,10 +327,8 @@ if os.name=="nt":
     ]
     A_CHARTEXT = 0x0000ffff
 
-
     def has_key(key: int) -> bool:
         return key >= KEY_MIN and key <= KEY_MAX
-
 
     def unctrl(c: int) -> str:
         ic = c & A_CHARTEXT
@@ -344,16 +341,13 @@ if os.name=="nt":
 
         return "^"+chr(ic + ord('@'))
 
-
     def get_name(key: int) -> str:
         if (key == ord('\r')):
             return '\n'
         return unctrl(key) if ((key >= 0) and (key < 0x80)) else (names[key - KEY_MIN] if has_key(key) else "UNKNOWN KEY")
 
-
     def KEY_F(n: int) -> int:
         return KEY_F0 + n
-
 
     kptab: list[dict[str, int]] = [
         {"normal": 0,          "shift": 0,         "control": 0,
@@ -813,10 +807,8 @@ if os.name=="nt":
     left_key = 0
     special = False
 
-
     def is_special():
         return special
-
 
     def get_key_count(KEV: KEY_EVENT_RECORD):
         global save_press, left_key
@@ -848,12 +840,11 @@ if os.name=="nt":
 
         return num_keys
 
-
     def process_key_event(KEV: KEY_EVENT_RECORD):
         global special
         key: int = ord(KEV.uChar.UnicodeChar)
-        vk = KEV.wVirtualKeyCode
-        state = KEV.dwControlKeyState
+        vk: int = KEV.wVirtualKeyCode
+        state: int = KEV.dwControlKeyState
 
         idx = 0
         enhanced = False
