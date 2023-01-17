@@ -76,7 +76,7 @@ class MouseType(Enum):
 
 
 class Mouse:
-    def __init__(self, *, position: tuple[int, int], type_: MouseType, buttons: list[int], scroll: tuple[int, int],
+    def __init__(self, *, position: tuple[int, int], type_: MouseType, buttons: list[int], scroll: tuple[float, float],
                  capslock: bool,
                  enhanced: bool,
                  left_alt: bool,
