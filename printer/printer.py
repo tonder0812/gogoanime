@@ -28,14 +28,14 @@ class Printer(AbstractPrinter):
 
     def wait(self) -> Self:
         with self._lock:
-            self.a__render(True)
+            self.__render(True)
             self.waiting = True
         return self
 
     def resume(self) -> Self:
         with self._lock:
             self.waiting = False
-            self.a__render()
+            self.__render()
         return self
 
     @override
@@ -74,13 +74,13 @@ class Printer(AbstractPrinter):
         while True:
 
             if not self.waiting:
-                self.a__render()
+                self.__render()
 
             if self.stopped:
                 return
             time.sleep(self.delay)
 
-    def a__render(self, should_set_cursor: bool = False) -> None:
+    def __render(self, should_set_cursor: bool = False) -> None:
         with self._lock(1):
             if not self.formated:
                 self.format_msg()
@@ -96,8 +96,8 @@ class Printer(AbstractPrinter):
                         self.scroller.position += 1
                         self.scroller.velocity = 0
                 else:
-                    if event.scroll[1] != 0 and abs(event.scroll[1] % 120) == 0:
-                        self.scroller.position -= event.scroll[1]/120
+                    if event.scroll[1] != 0 and abs(event.scroll[1] % 1) == 0:
+                        self.scroller.position -= event.scroll[1]
                         self.scroller.velocity = 0
                     else:
                         velocity -= event.scroll[1]
@@ -105,7 +105,7 @@ class Printer(AbstractPrinter):
             self.height, self.width = console.get_size()
             rows = calc_rows(self.msg, self.width)-2
             self.scroller.update(
-                1.25*velocity/120, rows)
+                1*velocity, rows)
             # Render message
             console.set_text(self.msg, int(
                 self.scroller.position), should_set_cursor)

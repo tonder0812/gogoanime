@@ -125,11 +125,13 @@ if os.name == "nt":
                 i+1 for i in range(32) if (event.dwButtonState & (1 << i)) != 0]
             scroll = (0, 0)
             if event.dwEventFlags == MOUSE_WHEELED:
-                scroll = (0, ctypes.c_int16(event.dwButtonState >> 16).value)
+                scroll = (0, ctypes.c_int16(
+                    event.dwButtonState >> 16).value/120)
                 buttons = []
                 type_ = MouseType.SCROLL
             if event.dwEventFlags == MOUSE_HWHEELED:
-                scroll = (ctypes.c_int16(event.dwButtonState >> 16).value, 0)
+                scroll = (ctypes.c_int16(
+                    event.dwButtonState >> 16).value/120, 0)
                 buttons = []
                 type_ = MouseType.SCROLL
             if event.dwEventFlags == MOUSE_MOVED:
