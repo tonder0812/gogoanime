@@ -31,7 +31,7 @@ $ ./install.sh
 ### Linux
 
 ```
-> python3 check.py [-c]
+$ python3 check.py [-c]
 ```
 
 ### Flags
