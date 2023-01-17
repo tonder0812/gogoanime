@@ -1,6 +1,6 @@
 # GogoAnime downloader
 
-A python application to auto download anime from the https://gogoanime.tel website (windows only)
+A python application to auto download anime from the https://gogoanime.tel website
 
 It's necessary to have a logged in gogoanime account
 
@@ -8,15 +8,33 @@ It's necessary to have a logged in gogoanime account
 
 Run the install script to create the config folder
 
+### Windows
+
 ```
 > ./install.bat
 ```
 
+### Linux
+
+```
+$ ./install.sh
+```
+
 ## Usage
+
+### Windows
 
 ```
 > python check.py [-c]
 ```
+
+### Linux
+
+```
+> python3 check.py [-c]
+```
+
+### Flags
 
 The `-c` flag makes the program run continually (every five minutes)
 
