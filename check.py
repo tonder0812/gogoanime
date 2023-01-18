@@ -91,7 +91,8 @@ def main():
     session.cookies.update(load_cookies())
 
     p.set("timer", CHECK_INTERVAL)
-    p.set("processing", str(processing))
+
+    set_processing(p)
 
     p.print()
     p.add_desc("Time to next check:{timer}s ")

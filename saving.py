@@ -11,11 +11,10 @@ LockType = Union[threading.RLock, threading.RLock]
 class Processing(ProcessingType):
     def __init__(self) -> None:
         self.lock = threading.RLock()
-        self.processing: ProcessingType = {}
 
     def __str__(self) -> str:
         with self.lock:
-            return json.dumps(self.processing)
+            return json.dumps(self)
 
     def __repr__(self) -> str:
         return str(self)
