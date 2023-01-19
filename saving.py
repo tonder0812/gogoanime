@@ -1,6 +1,6 @@
 import json
 import threading
-from typing import Callable, ParamSpec, TypeVar, Union
+from typing import Callable, Concatenate, ParamSpec, TypeVar, Union
 
 from config import new_location, watching_location
 
@@ -10,11 +10,56 @@ LockType = Union[threading.RLock, threading.RLock]
 
 class Processing(ProcessingType):
     def __init__(self) -> None:
-        self.lock = threading.RLock()
+        self._lock = threading.RLock()
 
     def __str__(self) -> str:
-        with self.lock:
+        with self._lock:
             return json.dumps(self)
+
+    def start(self, anime: str, ep: str):
+        with self._lock:
+            tmp = self.get(anime, {})
+            tmp[ep] = True
+            self[anime] = tmp
+
+    def finish(self, anime: str, ep: str, success: bool):
+        with self._lock:
+            if not anime in self or ep not in self[anime]:
+                return
+            tmp = {k: v for k, v in self[anime].items()}
+            if success:
+                tmp[ep] = False
+            else:
+                del tmp[ep]
+            self[anime] = tmp
+
+    def update_processed(self, anime: str) -> list[str]:
+        processed_eps = []
+        with self._lock:
+            idsToDelete: list[str] = []
+            if anime in self:
+                if len(self[anime]) > 0:
+                    processed_eps = [
+                        k for k, v in self[anime].items() if not v]
+                self[anime] = {k: v for k,
+                               v in self[anime].items() if v}
+                if len(self[anime]) == 0:
+                    idsToDelete.append(anime)
+
+            for anime in idsToDelete:
+                del self[anime]
+        return processed_eps
+
+    def get_eps(self, anime: str) -> list[str]:
+        return list(self.get(anime, {}))
+
+    def with_lock(self):
+        def decorator(func: Callable[Concatenate[Processing, P], T]) -> Callable[P, T]:
+            def f(*args: P.args, **kwargs: P.kwargs) -> T:
+                with self._lock:
+                    return func(self, *args, **kwargs)
+            return f
+        return decorator
 
     def __repr__(self) -> str:
         return str(self)
@@ -22,15 +67,6 @@ class Processing(ProcessingType):
 
 T = TypeVar('T')
 P = ParamSpec('P')
-
-
-def with_processing(processing: Processing):
-    def decorator(func: Callable[P, T]) -> Callable[P, T]:
-        def f(*args: P.args, **kwargs: P.kwargs):
-            with processing.lock:
-                return func(*args, **kwargs)
-        return f
-    return decorator
 
 
 def parse_watching() -> tuple[dict[str, list[str]], dict[str, str]]:
@@ -85,31 +121,16 @@ def save_watching(watching: dict[str, list[str]], names: dict[str, str]):
             f.write("\n")
 
 
-def update_processing(processing: Processing, watching: dict[str, list[str]]) -> bool:
-    changed = False
-    with processing.lock:
-        idsToDelete: list[str] = []
-        for id_ in watching:
-            if id_ in processing:
-                if len(processing[id_]) > 0:
-                    watching[id_] = watching[id_] + \
-                        [k for k, v in processing[id_].items() if v]
-                processing[id_] = {k: v for k,
-                                   v in processing[id_].items() if not v}
-                if len(processing[id_]) == 0:
-                    idsToDelete.append(id_)
-                changed = True
-
-        for id_ in idsToDelete:
-            del processing[id_]
-    return changed
-
-
 def get_watching(names: dict[str, str], processing: Processing) -> dict[str, list[str]]:
     watching, new_names = parse_watching()
     names.update(new_names)
 
-    changed = update_processing(processing, watching)
+    changed = False
+    for anime_link in watching:
+        processed_eps = processing.update_processed(anime_link)
+        if len(processed_eps) > 0:
+            changed = True
+        watching[anime_link].extend(processed_eps)
 
     changed = parse_new(watching, names) or changed
 

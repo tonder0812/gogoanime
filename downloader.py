@@ -61,13 +61,7 @@ def dowload_anime_logo(p: AbstractPrinter, session: requests.Session, infos: dic
 def download_callback(anime_link: str, ep: str, processing: Processing | None) -> Callable[[str, bool, Any, str], None]:
     def cb(filename: str, success: bool, data: Any, _: str):
         if processing is not None:
-            with processing.lock:
-                tmp = {k: v for k, v in processing[anime_link].items()}
-                if success:
-                    tmp[ep] = True
-                else:
-                    del tmp[ep]
-                processing[anime_link] = tmp
+            processing.finish(anime_link, ep, success)
         user_end_download(filename, success, data)
     return cb
 
@@ -98,10 +92,7 @@ def download_episode(
     filename, filenameDesc = generate_filenames(eps, epN, ep)
 
     if processing is not None:
-        with processing.lock:
-            tmp = processing[anime_link]
-            tmp[ep] = False
-            processing[anime_link] = tmp
+        processing.start(anime_link, ep)
 
     t = threading.Thread(target=download_file,
                          args=[],
@@ -134,21 +125,17 @@ def download_anime(
         processing: Processing,
 ):
 
-    with processing.lock:
-        links, links_to_download = get_episodes_to_download(
-            session,
-            infos[anime_link].anime_id,
-            watched_eps +
-            list(processing.get(anime_link, {}))
-        )
+    links, links_to_download = get_episodes_to_download(
+        session,
+        infos[anime_link].anime_id,
+        watched_eps +
+        processing.get_eps(anime_link)
+    )
 
     if links is None or links_to_download is None or len(links_to_download) <= 0:
         return
 
     anime_name = names.get(anime_link, infos[anime_link].name)
-
-    with processing.lock:
-        processing[anime_link] = processing.get(anime_link, {})
 
     eps: list[str] = list(sorted(links.keys(), key=episode_order))
 

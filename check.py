@@ -13,7 +13,6 @@ from downloader import download_anime
 from printer import Printer, AbstractPrinter
 from saving import Processing
 from saving import get_watching as _get_watching
-from saving import with_processing
 
 CHECK_INTERVAL: int = 60 * 5
 
@@ -23,13 +22,13 @@ names: dict[str, str] = {}
 infos: dict[str, AnimeInfo] = {}
 
 
-@with_processing(processing)
-def set_processing(p: AbstractPrinter):
+@processing.with_lock()
+def set_processing(processing: Processing, p: AbstractPrinter):
     p.set("processing", str(processing))
 
 
-@with_processing(processing)
-def get_watching(p: AbstractPrinter, names: dict[str, str]) -> dict[str, list[str]]:
+@processing.with_lock()
+def get_watching(processing: Processing, p: AbstractPrinter, names: dict[str, str]) -> dict[str, list[str]]:
     res = _get_watching(names, processing)
     set_processing(p)
     return res
@@ -47,8 +46,8 @@ def update_info(session: requests.Session, anime_link: str):
         infos[anime_link] = info
 
 
-@ with_processing(processing)
-def check(p: AbstractPrinter, session: requests.Session):
+@processing.with_lock()
+def check(processing: Processing, p: AbstractPrinter, session: requests.Session):
     watching = get_watching(p, names)
     for anime_link in watching:
         time.sleep(1)
