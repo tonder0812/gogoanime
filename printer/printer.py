@@ -81,7 +81,7 @@ class Printer(AbstractPrinter):
             time.sleep(self.delay)
 
     def __render(self, should_set_cursor: bool = False) -> None:
-        with self._lock(1):
+        with self._lock(-1):
             if not self.formated:
                 self.format_msg()
             velocity = 0
