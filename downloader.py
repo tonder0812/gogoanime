@@ -10,52 +10,43 @@ from config import user_end_download, user_start_downloading
 from episode import episode_order, get_episodes_to_download
 from printer import FakePrinter, AbstractPrinter
 from saving import Processing
-from utils.download import download_file, http_builder
+from utils.download import SrcType, download_file, http_builder
 from utils.format import generate_filenames, normalize_filename
 
 
-def dowload_anime_logo_callback(_: str, success: bool, cb_data: tuple[str, str, requests.Session, AbstractPrinter] | None, download_id: str):
-    if success:
-        return
-    time.sleep(1)
-    assert cb_data is not None
-    anime_link, show_folder, session, p = cb_data
-    info = get_anime_info(session, anime_link)
-    while info is None or info.logo_url is None:
-        info = get_anime_info(session, anime_link)
-    download_file(src=http_builder(info.logo_url),
-                  folder=show_folder,
-                  filename="logo.png",
-                  printr=p,
-                  size_digits=2,
-                  cb=dowload_anime_logo_callback,
-                  cb_data=(anime_link, show_folder, session, p),
-                  download_id=download_id,
-                  )
+def anime_logo_builder(anime_link: str, infos: dict[str, AnimeInfo], session: requests.Session) -> SrcType:
+    last_link = [""]
+
+    def src(segments_processed: int):
+        if last_link[0] == "":
+            info = infos[anime_link]
+        else:
+            info = get_anime_info(session, anime_link)
+
+        while info is None or info.logo_url is None:
+            info = get_anime_info(session, anime_link)
+
+        if info.logo_url != last_link[0]:
+            segments_processed = 0
+
+        last_link[0] = info.logo_url
+
+        return http_builder(info.logo_url, session=session)(segments_processed)
+    return src
 
 
 def dowload_anime_logo(p: AbstractPrinter, session: requests.Session, infos: dict[str, AnimeInfo], anime_link: str, show_folder: str, threads: list[threading.Thread], minimize_print: bool = False) -> None:
-    image_link = "Logo already exists"
-    show_info = infos[anime_link]
-    if show_info.logo_url is None:
-        p.print("Failed to get logo url")
-        return
     if not os.path.isfile(os.path.join(show_folder, "logo.png")):
-        image_link = show_info.logo_url
         t = threading.Thread(target=download_file, kwargs={
-            "src": http_builder(image_link),
+            "src": anime_logo_builder(anime_link, infos, session),
             "folder": show_folder,
             "filename": "logo.png",
             "printr": p,
             "size_digits": 2,
-            "cb": dowload_anime_logo_callback,
-            "cb_data": (anime_link, show_folder, session, p),
-            "max_tries": 1
+            "max_tries": -1
         })
         t.start()
         threads.append(t)
-    if not minimize_print:
-        p.print(image_link)
 
 
 def download_callback(anime_link: str, ep: str, processing: Processing | None) -> Callable[[str, bool, Any, str], None]:
