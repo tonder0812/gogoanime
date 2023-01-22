@@ -1,3 +1,4 @@
+import itertools
 import math
 import os
 import subprocess
@@ -24,25 +25,50 @@ def http_builder(url: str, headers: dict[str, str | bytes] | None = None, sessio
     if session is None:
         session = defaultSession
 
-    def src(_: int):
+    def src(segments_processed: int):
         with session.head(url, timeout=3 * 60, headers=headers, allow_redirects=True) as r:
             # debug_log(url + " status_code: " + str(r.status_code))
             r.raise_for_status()
             content_length = r.headers.get('content-length')
             if content_length is not None:
-                total_length = int(content_length)
-                total = math.ceil(total_length / 1024)
+                remaining_length = int(content_length)
+                total = math.ceil(remaining_length / 1024)
             else:
                 total = -1
 
-        def stream():
-            with session.get(url, stream=True, timeout=3 * 60, headers=headers, allow_redirects=True) as r:
+        if segments_processed != 0:
+            bytes_processed = segments_processed*1024
+            resume_header = {'Range': f'bytes={bytes_processed}-'}
+            if headers is None:
+                new_headers = resume_header
+            else:
+                new_headers = headers | resume_header
+            with session.head(url, timeout=3 * 60, headers=new_headers, allow_redirects=True) as r:
+                # debug_log(url + " status_code: " + str(r.status_code))
+                r.raise_for_status()
+                content_length = r.headers.get('content-length')
+                if content_length is not None:
+                    remaining_length = int(content_length)
+                    remaning = math.ceil(remaining_length / 1024)
+                    if total-remaning != segments_processed:
+                        segments_processed = 0
+
+        def stream(segments_processed: int):
+            new_headers = headers
+            if segments_processed != 0:
+                bytes_processed = segments_processed*1024
+                resume_header = {'Range': f'bytes={bytes_processed}-'}
+                if headers is None:
+                    new_headers = resume_header
+                else:
+                    new_headers = headers | resume_header
+            with session.get(url, stream=True, timeout=3 * 60, headers=new_headers, allow_redirects=True) as r:
                 r.raise_for_status()
                 for chunck in r.iter_content(chunk_size=1024):
                     yield chunck
 
         def func(folder: str, filename: str): return None
-        return stream(), 0, total, func
+        return stream(segments_processed), segments_processed, total, func
     return src
 
 
@@ -141,13 +167,17 @@ def download_file(*, src: SrcType,
     start = time.perf_counter()
     estimate = t = None
     transformer: Callable[[str, str], None] = lambda _, __: None
-    for try_ in range(max_tries):
+
+    iterator = range(max_tries)
+    if max_tries < 0:
+        iterator = itertools.count()
+
+    for try_ in iterator:
         file_stats["try"] = try_
         file_stats["updated"] = time.asctime()
         printr.set(download_id, file_stats)
         estimate = t = None
         try:
-            # printr.print(segments_processed)
             stream, segments_processed, total, transformer = src(
                 segments_processed)
             mode = 'ab' if segments_processed > 0 else 'wb'
@@ -156,10 +186,11 @@ def download_file(*, src: SrcType,
                 estimate.segments_processed = segments_processed
                 t = threading.Thread(target=estimate.run)
                 t.start()
-            # printr.print(mode)
+
             with open(temp_filename, mode) as f:
                 file_stats["max"] = total
                 printr.set(download_id, file_stats)
+                last_update = time.time()
                 for chunk in stream:
                     segments_processed += 1
                     if estimate:
@@ -171,18 +202,20 @@ def download_file(*, src: SrcType,
                         start, time.perf_counter())
                     file_stats["progress"] = segments_processed
                     file_stats["updated"] = time.asctime()
-                    printr.set(download_id, file_stats)
+                    current = time.time()
+                    if current-last_update > 0.1:
+                        last_update = current
+                        printr.set(download_id, file_stats)
                     if chunk:
                         f.write(chunk)
             success = segments_processed > 0 and (
-                True if total < 0 else segments_processed == total)
-            break
+                total < 0 or segments_processed == total)
+            if success:
+                break
         except Exception as e:
             if estimate and t:
                 estimate.stop()
                 t.join()
-            # printr.print(e)
-            # printr.print(traceback.format_exc())
 
             debug_log("========================================================")
             debug_log(e)
@@ -194,8 +227,6 @@ def download_file(*, src: SrcType,
             file_stats["updated"] = time.asctime()
             printr.set(download_id, file_stats)
             time.sleep(5)
-            if try_ != (max_tries - 1) and try_ != 0 and try_ % 5 == 0:
-                time.sleep(1 * 60)
     if estimate and t:
         estimate.stop()
         t.join()
