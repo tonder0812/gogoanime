@@ -6,7 +6,7 @@ from typing import Any, Callable
 import requests
 
 from anime import AnimeInfo, get_anime_info
-from config import user_end_download, user_start_downloading
+from config import user_end_download, user_start_downloading, max_tries
 from episode import episode_order, get_episodes_to_download
 from printer import FakePrinter, AbstractPrinter
 from saving import Processing
@@ -92,7 +92,7 @@ def download_episode(
                              "folder": anime_folder,
                              "filename": filename,
                              "desc": filenameDesc,
-                             "max_tries": 5,
+                             "max_tries": max_tries,
                              "printr": p,
                              "size_digits": 6,
                              "cb": download_callback(anime_link, ep, processing),

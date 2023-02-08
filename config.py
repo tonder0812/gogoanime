@@ -2,7 +2,7 @@ import json
 from os import path
 from typing import Any, Optional
 
-maxTries = 5
+max_tries = 50
 
 config_location = "./config"
 new_location = path.join(config_location, "new.txt")
