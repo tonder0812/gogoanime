@@ -1,6 +1,7 @@
 import requests
 
 from parsers import AnimeParser
+from config import gogoanime_domain
 
 
 class AnimeInfo:
@@ -13,7 +14,7 @@ class AnimeInfo:
 def get_anime_info(session: requests.Session, anime_link: str) -> AnimeInfo | None:
     try:
         with (
-            session.get(f"https://gogoanime.tel/category/{anime_link}") as r,
+            session.get(f"https://{gogoanime_domain}/category/{anime_link}") as r,
             AnimeParser(r.content.decode()) as p
         ):
             r.raise_for_status()

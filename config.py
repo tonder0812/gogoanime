@@ -1,8 +1,5 @@
 import json
 from os import path
-from typing import Any, Optional
-
-max_tries = 50
 
 config_location = "./config"
 new_location = path.join(config_location, "new.txt")
@@ -10,22 +7,52 @@ quit_location = path.join(config_location, "quit.txt")
 watching_location = path.join(config_location, "watching.txt")
 config_json_location = path.join(config_location, "config.json")
 
-download_path: str = "./Downloads"
-notification_file_location: Optional[str] = None
-browser: str | None = "chrome"
-cookies_location: str | None = None
+valid_browsers = ("chrome",
+                  "chromium",
+                  "opera",
+                  "brave",
+                  "edge",
+                  "vivaldi",
+                  "firefox",
+                  "safari")
 
 with open(config_json_location, "r") as f:
     options = json.load(f)
-download_path = options.get("download_path", download_path)
-notification_file_location = options.get(
-    "notification_file_location", notification_file_location)
-browser = options.get("browser", notification_file_location)
-cookies_location = options.get(
-    "cookies_location", notification_file_location)
+
+download_path = options.get("download_path", "./Downloads")
+if not isinstance(download_path, str):
+    print("Invalid config: download_path, must be a string")
+    exit(1)
+
+notification_file_location = options.get("notification_file_location")
+if notification_file_location is not None and not isinstance(notification_file_location, str):
+    print("Invalid config: notification_file_location, must be a string or null")
+    exit(1)
 
 
-def user_end_download(filename: str, success: bool, data: Any):
+browser = options.get("browser", "chrome")
+if browser not in valid_browsers:
+    print(f"Invalid config: browser, must be one of {','.join(valid_browsers)}")
+    exit(1)
+assert isinstance(browser, str)
+
+cookies_location = options.get("cookies_location")
+if cookies_location is not None and not isinstance(cookies_location, str):
+    print(f"Invalid config: cookies_location, must be a string or null")
+    exit(1)
+
+max_tries = options.get("max_tries", 50)
+if not isinstance(max_tries, int) or (max_tries != -1 and max_tries <= 0):
+    print(f"Invalid config: max_tries, must be a positive integer or -1")
+    exit(1)
+
+gogoanime_domain = options.get("gogoanime_domain", "gogoanime.llc")
+if not isinstance(gogoanime_domain, str):
+    print("Invalid config: gogoanime_domain, must be a string")
+    exit(1)
+
+
+def user_end_download(filename: str, success: bool, data: str):
     if success and notification_file_location is not None:
         with open(path.join(notification_file_location, "downloaded.txt"), "a", encoding="utf-8") as f:
             f.write(f"{data}\n")

@@ -1,12 +1,12 @@
 import requests
-
+from config import gogoanime_domain
 from parsers import EpListParser, VideoLinkParser
 
 
 def get_episode_download_link(session: requests.Session, links: dict[str, str], episode: str) -> str | None:
     try:
         with (
-            session.get(f"https://gogoanime.tel{links[episode]}") as r,
+            session.get(f"https://{gogoanime_domain}{links[episode]}") as r,
             VideoLinkParser(r.content.decode()) as p
         ):
             r.raise_for_status()

@@ -3,7 +3,7 @@ from http.cookiejar import CookieJar
 
 import browser_cookie3
 
-from config import browser, cookies_location
+from config import browser, cookies_location, gogoanime_domain
 
 loaders = {
     "chrome": browser_cookie3.chrome,
@@ -20,4 +20,4 @@ loaders = {
 def load_cookies() -> CookieJar:
     if browser is None:
         return CookieJar()
-    return loaders[browser](cookie_file=cookies_location, domain_name="gogoanime.tel")
+    return loaders[browser](cookie_file=cookies_location, domain_name=gogoanime_domain)
