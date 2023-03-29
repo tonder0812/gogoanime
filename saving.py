@@ -126,11 +126,11 @@ def get_watching(names: dict[str, str], processing: Processing) -> dict[str, lis
     names.update(new_names)
 
     changed = False
-    for anime_link in watching:
-        processed_eps = processing.update_processed(anime_link)
+    for anime_id in watching:
+        processed_eps = processing.update_processed(anime_id)
         if len(processed_eps) > 0:
             changed = True
-        watching[anime_link].extend(processed_eps)
+        watching[anime_id].extend(processed_eps)
 
     changed = parse_new(watching, names) or changed
 

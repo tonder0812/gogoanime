@@ -36,12 +36,16 @@ def get_episode_links(session: requests.Session, anime_id: str) -> dict[str, str
         return None
 
 
-def get_episodes_to_download(session: requests.Session, anime_id: str, already_downloaded: list[str]) -> tuple[dict[str, str], dict[str, str]] | tuple[None, None]:
+def get_episodes_to_download(session: requests.Session, anime_id: str, blacklist: list[str] | None, whitelist: list[str] | None) -> tuple[dict[str, str], dict[str, str]] | tuple[None, None]:
     links = get_episode_links(session, anime_id)
     if links is None:
         return None, None
     links_to_download = links.copy()
-    filter_blacklist_episode_links(links_to_download, already_downloaded)
+
+    if blacklist is not None:
+        links_to_download = blacklist_episode_links(links_to_download, blacklist)
+    if whitelist is not None:
+        links_to_download = whitelist_episode_links(links_to_download, whitelist)
 
     return links, get_episodes_download_links(session, links_to_download)
 
@@ -55,7 +59,17 @@ def episode_order(ep: str) -> float:
     return float("0" + ep)
 
 
-def filter_blacklist_episode_links(links: dict[str, str], blacklist: list[str]):
-    for i in blacklist:
+def blacklist_episode_links(links: dict[str, str], blacklist: list[str]) -> dict[str, str]:
+    new_links: dict[str, str] = {}
+    for i in links:
+        if i not in blacklist:
+            new_links[i] = links[i]
+    return new_links
+
+
+def whitelist_episode_links(links: dict[str, str], whitelist: list[str]) -> dict[str, str]:
+    new_links: dict[str, str] = {}
+    for i in whitelist:
         if i in links:
-            del links[i]
+            new_links[i] = links[i]
+    return new_links

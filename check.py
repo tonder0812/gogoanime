@@ -10,7 +10,7 @@ from anime import AnimeInfo, get_anime_info
 from config import download_path, quit_location
 from cookies import load_cookies
 from downloader import download_anime
-from printer import Printer, AbstractPrinter
+from printer import AbstractPrinter, Printer
 from saving import Processing
 from saving import get_watching as _get_watching
 
@@ -34,41 +34,43 @@ def get_watching(processing: Processing, p: AbstractPrinter, names: dict[str, st
     return res
 
 
-def invalid_info(anime_link: str):
-    return anime_link not in infos or infos[anime_link].logo_url is None
+def invalid_info(anime_id: str):
+    return anime_id not in infos or infos[anime_id].logo_url is None
 
 
-def update_info(session: requests.Session, anime_link: str):
-    if invalid_info(anime_link):
-        info = get_anime_info(session, anime_link)
+def update_info(session: requests.Session, anime_id: str):
+    if invalid_info(anime_id):
+        info = get_anime_info(session, anime_id)
         if info is None:
             return
-        infos[anime_link] = info
+        infos[anime_id] = info
 
 
 @processing.with_lock()
 def check(processing: Processing, p: AbstractPrinter, session: requests.Session):
     watching = get_watching(p, names)
-    for anime_link in watching:
+    for anime_id in watching:
         time.sleep(1)
-        os.system("title checking "+anime_link)
+        os.system("title checking "+anime_id)
 
-        update_info(session, anime_link)
+        update_info(session, anime_id)
 
-        if invalid_info(anime_link):
+        if invalid_info(anime_id):
             continue
 
-        download_anime(
+        if download_anime(
             session=session,
             base_path=download_path,
-            anime_link=anime_link,
-            watched_eps=watching[anime_link],
+            anime_id=anime_id,
+            blacklist=watching[anime_id],
             infos=infos,
             names=names,
             p=p,
             threads=threads,
             processing=processing
-        )
+        ):
+            p.add_desc("\nTime to next check:{timer}s\n")
+            p.print("----------------------------")
         set_processing(p)
 
 

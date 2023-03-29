@@ -1,24 +1,131 @@
+import sys
+import threading
+from typing import Any, Callable
+
 import requests
 
 from anime import get_anime_info
+from config import download_path, user_end_download
 from cookies import load_cookies
-from episode import (filter_blacklist_episode_links, get_episode_links,
-                     get_episodes_download_links)
+from downloader import download_anime
+from printer import AbstractPrinter, Printer
+from saving import Processing
+
+
+def input_ep_list(p: AbstractPrinter, typ: str, lst: list[str]):
+    p.print(f"{typ} ep ids: (leave blank to stop inputing)")
+    ep = p.input()
+    while ep.strip() != "":
+        lst.append(ep)
+        ep = p.input()
+
+
+def callback(anime_id: str, ep: str, processing: Processing | None) -> Callable[[str, bool, Any, str], None]:
+    def cb(filename: str, success: bool, data: Any, _: str):
+        user_end_download(filename, success, data)
+        if processing is not None:
+            processing.finish(anime_id, ep, success)
+        if not success:
+            threads: list[threading.Thread] = []
+
+            info = get_anime_info(s, anime_id)
+            while info is None:
+                info = get_anime_info(s, anime_id)
+            download_anime(
+                session=s,
+                base_path=base_path,
+                anime_id=anime_id,
+                blacklist=blacklist,
+                whitelist=whitelist,
+                infos={anime_id: info},
+                names={},
+                p=p,
+                threads=threads,
+                processing=processing,
+                callback=callback
+            )
+            for t in threads:
+                t.join()
+    return cb
+
+
+p: AbstractPrinter = Printer()
+s = requests.Session()
+blacklist: list[str] | None = None
+whitelist: list[str] | None = None
+base_path: str = download_path
 
 
 def main():
-    s = requests.Session()
-    s.cookies.update(load_cookies())
-    info = get_anime_info(s, "mairimashita-iruma-kun-3rd-season")
-    assert info is not None
-    print(info.anime_id)
-    print(info.name)
-    print(info.logo_url)
-    links = get_episode_links(s, info.anime_id)
-    assert links is not None
-    watched = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"]
-    filter_blacklist_episode_links(links, watched)
-    print(get_episodes_download_links(s, links))
+    global blacklist, whitelist, base_path
+    args: list[str] = sys.argv
+
+    anime_id: str = ""
+
+    threads: list[threading.Thread] = []
+
+    processing = Processing()
+
+    try:
+        while len(args) > 0:
+            arg = args.pop(0)
+
+            if arg == "-id" and len(args) > 0:
+                anime_id = args[0]
+                args.pop(0)
+            elif arg == "-place" and len(args) > 0:
+                base_path = args[0]
+                args.pop(0)
+            elif arg == "-Iwhitelist":
+                if whitelist is None:
+                    whitelist = []
+                input_ep_list(p, "whitelist", whitelist)
+            elif arg == "-Iblacklist":
+                if blacklist is None:
+                    blacklist = []
+                input_ep_list(p, "blacklist", blacklist)
+            elif arg == "-Cwhitelist":
+                if whitelist is None:
+                    whitelist = []
+                while len(args) > 0 and len(args[0]) > 0 and args[0][0] != "-":
+                    whitelist.append(args[0])
+                    args.pop(0)
+            elif arg == "-Cblacklist":
+                if blacklist is None:
+                    blacklist = []
+                while len(args) > 0 and len(args[0]) > 0 and args[0][0] != "-":
+                    blacklist.append(args[0])
+                    args.pop(0)
+
+        if anime_id == "":
+            p.print("please provide the anime id")
+            return
+
+        s.cookies.update(load_cookies())
+
+        info = get_anime_info(s, anime_id)
+        while info is None:
+            info = get_anime_info(s, anime_id)
+
+        download_anime(
+            session=s,
+            base_path=base_path,
+            anime_id=anime_id,
+            blacklist=blacklist,
+            whitelist=whitelist,
+            infos={anime_id: info},
+            names={},
+            p=p,
+            threads=threads,
+            processing=processing,
+            callback=callback
+        )
+    except Exception:
+        pass
+    finally:
+        for t in threads:
+            t.join()
+        p.stop()
 
 
 if __name__ == "__main__":
