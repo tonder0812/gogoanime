@@ -3,6 +3,7 @@ import threading
 from typing import Callable, Concatenate, ParamSpec, TypeVar, Union
 
 from config import new_location, watching_location
+from episode import episode_order
 
 ProcessingType = dict[str, dict[str, bool]]
 LockType = Union[threading.RLock, threading.RLock]
@@ -115,7 +116,7 @@ def parse_new(watching: dict[str, list[str]], names: dict[str, str]) -> bool:
 def save_watching(watching: dict[str, list[str]], names: dict[str, str]):
     with open(watching_location, "w") as f:
         for anime in watching:
-            f.write(anime + " " + ",".join(watching[anime]))
+            f.write(anime + " " + ",".join(sorted(watching[anime],key=episode_order)))
             if (anime in names):
                 f.write(" | " + names[anime])
             f.write("\n")
