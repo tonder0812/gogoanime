@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import threading
 import time
 from typing import Any, Callable
@@ -10,7 +11,7 @@ from config import user_end_download, user_start_downloading, max_tries
 from episode import episode_order, get_episodes_to_download
 from printer import FakePrinter, AbstractPrinter
 from saving import Processing
-from utils.download import SrcType, download_file, http_builder
+from utils.download import SrcType, download_file_threaded, http_builder
 from utils.format import generate_filenames, normalize_filename
 
 
@@ -35,35 +36,35 @@ def anime_logo_builder(anime_id: str, infos: dict[str, AnimeInfo], session: requ
     return src
 
 
-def dowload_anime_logo(p: AbstractPrinter, session: requests.Session, infos: dict[str, AnimeInfo], anime_id: str, show_folder: str, threads: list[threading.Thread], minimize_print: bool = False) -> None:
+def dowload_anime_logo(p: AbstractPrinter, session: requests.Session, infos: dict[str, AnimeInfo], anime_id: str, show_folder: Path, threads: list[threading.Thread]) -> None:
     if not os.path.isfile(os.path.join(show_folder, "logo.png")):
-        t = threading.Thread(target=download_file, kwargs={
-            "src": anime_logo_builder(anime_id, infos, session),
-            "folder": show_folder,
-            "filename": "logo.png",
-            "printr": p,
-            "size_digits": 2,
-            "max_tries": -1
-        })
+        t = download_file_threaded(
+            src=anime_logo_builder(anime_id, infos, session),
+            folder=show_folder,
+            filename="logo.png",
+            printr=p,
+            size_digits=2,
+            max_tries=-1
+        )
         t.start()
         threads.append(t)
 
 
-def download_callback(anime_id: str, ep: str, processing: Processing | None) -> Callable[[str, bool, Any, str], None]:
-    def cb(filename: str, success: bool, data: Any, _: str):
+def download_callback(anime_id: str, ep: str, processing: Processing | None) -> Callable[[Path, bool, Any, str], None]:
+    def cb(filename: Path, success: bool, data: Any, _: str):
         if processing is not None:
             processing.finish(anime_id, ep, success)
         user_end_download(filename, success, data)
     return cb
 
 
-CallbackType = Callable[[str, str, Processing | None], Callable[[str, bool, Any, str], None]]
+CallbackType = Callable[[str, str, Processing | None], Callable[[Path, bool, Any, str], None]]
 
 
 def download_episode(*,
                      anime_name: str,
                      anime_id: str,
-                     anime_folder: str,
+                     anime_folder: Path,
                      download_url: str,
 
                      ep: str,
@@ -92,19 +93,17 @@ def download_episode(*,
     if processing is not None:
         processing.start(anime_id, ep)
 
-    t = threading.Thread(target=download_file,
-                         args=[],
-                         kwargs={
-                             "src": http_builder(download_url, session=session),
-                             "folder": anime_folder,
-                             "filename": filename,
-                             "desc": filenameDesc,
-                             "max_tries": max_tries,
-                             "printr": p,
-                             "size_digits": 6,
-                             "cb": callback(anime_id, ep, processing),
-                             "cb_data": f"{anime_name} - {ep}\n"
-                         })
+    t = download_file_threaded(
+        src=http_builder(download_url, session=session),
+        folder=anime_folder,
+        filename=filename,
+        desc=filenameDesc,
+        max_tries=max_tries,
+        printr=p,
+        size_digits=6,
+        cb=callback(anime_id, ep, processing),
+        cb_data=f"{anime_name} - {ep}\n"
+    )
     t.start()
     threads.append(t)
     time.sleep(1)
@@ -113,7 +112,7 @@ def download_episode(*,
 def download_anime(
         *,
         session: requests.Session,
-        base_path: str,
+        base_path: Path,
         anime_id: str,
         blacklist: list[str] | None = None,
         whitelist: list[str] | None = None,
@@ -124,6 +123,8 @@ def download_anime(
         threads: list[threading.Thread],
         processing: Processing | None,
         callback: CallbackType | None = None
+
+
 ) -> bool:
     if processing is not None:
         if blacklist is None:
@@ -150,13 +151,12 @@ def download_anime(
             p.add_desc(" V")
         p.print("")
 
-    anime_folder = os.path.join(
-        base_path, normalize_filename(anime_name, False))
+    anime_folder = base_path / normalize_filename(anime_name, False)
 
     os.makedirs(anime_folder, exist_ok=True)
 
     dowload_anime_logo(p, session, infos, anime_id,
-                       anime_folder, threads, True)
+                       anime_folder, threads)
 
     for epN, ep in enumerate(eps, 1):
         download_url = links_to_download.get(ep)

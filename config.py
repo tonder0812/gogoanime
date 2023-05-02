@@ -1,5 +1,6 @@
 import json
 from os import path
+from pathlib import Path
 
 config_location = "./config"
 new_location = path.join(config_location, "new.txt")
@@ -19,9 +20,9 @@ valid_browsers = ("chrome",
 with open(config_json_location, "r") as f:
     options = json.load(f)
 
-download_path = options.get("download_path", "./Downloads")
-if not isinstance(download_path, str):
-    print("Invalid config: download_path, must be a string")
+download_path = Path(options.get("download_path", "./Downloads"))
+if not download_path.exists() or not download_path.is_dir():
+    print("Invalid config: download_path, must be a directory")
     exit(1)
 
 notification_file_location = options.get("notification_file_location")
@@ -52,7 +53,7 @@ if not isinstance(gogoanime_domain, str):
     exit(1)
 
 
-def user_end_download(filename: str, success: bool, data: str):
+def user_end_download(filename: Path, success: bool, data: str):
     if success and notification_file_location is not None:
         with open(path.join(notification_file_location, "downloaded.txt"), "a", encoding="utf-8") as f:
             f.write(f"{data}\n")

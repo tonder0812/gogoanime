@@ -1,11 +1,13 @@
+from inspect import getfullargspec
 import itertools
 import math
-import os
+# import os
 import subprocess
 import threading
 import time
 import traceback
 from typing import Any, Callable, Generator, TypeVar
+from pathlib import Path
 
 import m3u8
 import requests
@@ -16,7 +18,7 @@ from utils.format import delta_time_str, format_time
 from utils.prediction import Prediction
 
 SrcType = Callable[[int], tuple[Generator[Any, None, None],
-                                int, int, Callable[[str, str], None]]]
+                                int, int, Callable[[Path, str], None]]]
 # deepcode ignore MissingClose: <please specify a reason of ignoring this>
 defaultSession = requests.Session()
 
@@ -67,7 +69,7 @@ def http_builder(url: str, headers: dict[str, str | bytes] | None = None, sessio
                 for chunck in r.iter_content(chunk_size=1024):
                     yield chunck
 
-        def func(folder: str, filename: str): return None
+        def func(folder: Path, filename: str): return None
         return stream(segments_processed), segments_processed, total, func
     return src
 
@@ -83,15 +85,15 @@ def m3u8_builder(playlist_url: str, headers: dict[str, str | bytes] | None = Non
         #     playlists.pop(0)
         # return playlists[0].absolute_uri
 
-    def ffmpegCorrection(folder: str, filename: str):
-        tmp_path = os.path.join(folder, "_"+filename)
-        correct_path = os.path.join(folder, filename)
+    def ffmpegCorrection(folder: Path, filename: str):
+        tmp_path = folder / ("_"+filename)
+        correct_path = folder / filename
         subprocess.run(["ffmpeg", "-y", "-hwaccel", "cuda", "-i", correct_path, tmp_path],
                        stdout=subprocess.DEVNULL,
                        stderr=subprocess.DEVNULL
                        )
-        os.remove(correct_path)
-        os.rename(tmp_path, correct_path)
+        correct_path.unlink(missing_ok=True)
+        tmp_path.rename(correct_path)
 
     real_url = get_real_url(playlist_url)
     playlist = m3u8.load(uri=real_url, headers=headers)
@@ -113,7 +115,7 @@ T = TypeVar("T")
 
 
 def download_file(*, src: SrcType,
-                  folder: str,
+                  folder: Path,
                   filename: str,
                   desc: str = "",
                   remove_old: bool = True,
@@ -121,23 +123,28 @@ def download_file(*, src: SrcType,
                   printr: AbstractPrinter | None = None,
                   size_digits: int = 6,
                   cb: (
-                      Callable[[str, bool, T | None, str], None] | None
+                      Callable[[Path, bool, T | None, str], None] | None
                   ) = None,
                   cb_data: T | None = None,
                   download_id: str | None = None,
-                  ) -> tuple[str, bool]:
+                  ) -> tuple[Path, bool]:
     global _download_N
+
     if desc == "":
         desc = filename
-    temp_filename = os.path.join(folder, filename + ".part")
-    local_filename = os.path.join(folder, filename)
+
+    temp_filename = folder/(filename + ".part")
+    local_filename = folder/filename
+
     success = False
     repeating_download = True
+
     if download_id is None:
         with _download_N_lock:
             _download_N += 1
             download_id = "Download_N" + str(_download_N)
         repeating_download = False
+
     file_stats: dict[str, float | str] = {
         "progress": 0,
         "max": 0,
@@ -166,7 +173,7 @@ def download_file(*, src: SrcType,
     segments_processed = 0
     start = time.perf_counter()
     estimate = t = None
-    transformer: Callable[[str, str], None] = lambda _, __: None
+    transformer: Callable[[Path, str], None] = lambda _, __: None
 
     iterator = range(max_tries)
     if max_tries < 0:
@@ -178,8 +185,7 @@ def download_file(*, src: SrcType,
         printr.set(download_id, file_stats)
         estimate = t = None
         try:
-            stream, segments_processed, total, transformer = src(
-                segments_processed)
+            stream, segments_processed, total, transformer = src(segments_processed)
             mode = 'ab' if segments_processed > 0 else 'wb'
             if total > 0:
                 estimate = Prediction(printr, download_id, total)
@@ -232,13 +238,26 @@ def download_file(*, src: SrcType,
         t.join()
 
     if remove_old:
-        try:
-            os.remove(local_filename)
-        except:
-            pass
+
+        iterator = range(max_tries)
+        if max_tries < 0:
+            iterator = itertools.count()
+
+        for try_ in iterator:
+            try:
+                local_filename.unlink(missing_ok=True)
+                break
+            except Exception as e:
+                debug_log("========================================================")
+                debug_log(e)
+                debug_log(traceback.format_exc())
+            time.sleep(0.1)
+        else:
+            success = False
 
     if success:
-        os.rename(temp_filename, local_filename)
+        temp_filename.rename(local_filename)
+
         try_ = file_stats["try"]
         file_stats["try"] = "transforming"
         file_stats["updated"] = time.asctime()
@@ -262,3 +281,39 @@ def download_file(*, src: SrcType,
         cb(local_filename, success, cb_data, download_id)
 
     return (temp_filename, success)
+
+
+def download_file_threaded(*, src: SrcType,
+                           folder: Path,
+                           filename: str,
+                           desc: str = "",
+                           remove_old: bool = True,
+                           max_tries: int = 10,
+                           printr: AbstractPrinter | None = None,
+                           size_digits: int = 6,
+                           cb: (
+                               Callable[[Path, bool, T | None, str], None] | None
+                           ) = None,
+                           cb_data: T | None = None,
+                           download_id: str | None = None,
+                           ) -> threading.Thread:
+    return threading.Thread(target=download_file, kwargs={
+        "src": src,
+        "folder": folder,
+        "filename": filename,
+        "desc": desc,
+        "remove_old": remove_old,
+        "max_tries": max_tries,
+        "printr": printr,
+        "size_digits": size_digits,
+        "cb": cb,
+        "cb_data": cb_data,
+        "download_id": download_id,
+    })
+
+
+annotations_normal = getfullargspec(download_file).annotations
+annotations_normal.pop("return", None)
+annotations_thread = getfullargspec(download_file_threaded).annotations
+annotations_thread.pop("return", None)
+assert annotations_normal == annotations_thread, "download_file and download_file_threaded must have the same arguments"

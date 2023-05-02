@@ -1,3 +1,4 @@
+from pathlib import Path
 import sys
 import threading
 from typing import Any, Callable
@@ -20,8 +21,8 @@ def input_ep_list(p: AbstractPrinter, typ: str, lst: list[str]):
         ep = p.input()
 
 
-def callback(anime_id: str, ep: str, processing: Processing | None) -> Callable[[str, bool, Any, str], None]:
-    def cb(filename: str, success: bool, data: Any, _: str):
+def callback(anime_id: str, ep: str, processing: Processing | None) -> Callable[[Path, bool, Any, str], None]:
+    def cb(filename: Path, success: bool, data: Any, _: str):
         user_end_download(filename, success, data)
         if processing is not None:
             processing.finish(anime_id, ep, success)
@@ -53,7 +54,7 @@ p: AbstractPrinter = Printer()
 s = requests.Session()
 blacklist: list[str] | None = None
 whitelist: list[str] | None = None
-base_path: str = download_path
+base_path: Path = download_path
 
 
 def main():
@@ -74,7 +75,7 @@ def main():
                 anime_id = args[0]
                 args.pop(0)
             elif arg == "-place" and len(args) > 0:
-                base_path = args[0]
+                base_path = Path(args[0])
                 args.pop(0)
             elif arg == "-Iwhitelist":
                 if whitelist is None:
@@ -100,6 +101,9 @@ def main():
         if anime_id == "":
             p.print("please provide the anime id")
             return
+
+        if not base_path.exists() or not base_path.is_dir():
+            p.print("Download folder must exist")
 
         s.cookies.update(load_cookies())
 
