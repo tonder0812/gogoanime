@@ -47,7 +47,7 @@ if not isinstance(max_tries, int) or (max_tries != -1 and max_tries <= 0):
     print(f"Invalid config: max_tries, must be a positive integer or -1")
     exit(1)
 
-gogoanime_domain = options.get("gogoanime_domain", "gogoanime.llc")
+gogoanime_domain = options.get("gogoanime_domain", "gogoanime.hu")
 if not isinstance(gogoanime_domain, str):
     print("Invalid config: gogoanime_domain, must be a string")
     exit(1)

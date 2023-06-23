@@ -1,6 +1,6 @@
 # GogoAnime downloader
 
-A python application to auto download anime from the https://gogoanime.llc website
+A python application to auto download anime from the https://gogoanime.hu website
 
 It's necessary to have a logged in gogoanime account
 
@@ -50,7 +50,7 @@ The config folder has 4 files inside:
   - **browser** the browser that has the gogoanime account logged in one of `(chrome, chromium, opera, brave, edge, vivaldi, firefox, safari)`. **Defaults to `chrome`**
   - **cookies_location** the path directly to the cookie file of the corresponding browser. If not set the code uses the default location for the browser
   - **max_tries** the number of tries permited when downloading an episode must de a positive integer or -1 (infinite). **Defaults to `50`**
-  - **gogoanime_domain** the domain of the gogoanime site. **Defaults to `gogoanime.llc`**
+  - **gogoanime_domain** the domain of the gogoanime site. **Defaults to `gogoanime.hu`**
 - **new.txt** a text file used to add new anime to the watching list safely if the program is running (one file per line in the format `<anime-id> |` or `<anime-id> | <anime-name>`)
 - **quit.txt** if this file has any content inside the program will finish any download it is doing and close (only works if running in continuous mode)
 - **watching.txt** a text file containing the currently queued anime, which episodes have already been downloaded separated only by a `,` and, if provided, a name for the anime, if omited the name present in the anime page will be used. The anime are listed one per line in one of the following formats:
