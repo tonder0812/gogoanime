@@ -1,6 +1,4 @@
 browser-cookie3==0.16.5
 m3u8==3.4.0
-pip==22.3.1
 requests==2.31.0
-setuptools==65.5.1
 typing-extensions==4.4.0
