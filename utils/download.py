@@ -20,12 +20,12 @@ from utils.prediction import Prediction
 SrcType = Callable[[int], tuple[Generator[Any, None, None],
                                 int, int, Callable[[Path, str], None]]]
 # deepcode ignore MissingClose: <please specify a reason of ignoring this>
-defaultSession = requests.Session()
+default_session = requests.Session()
 
 
 def http_builder(url: str, headers: dict[str, str | bytes] | None = None, session: requests.Session | None = None) -> SrcType:
     if session is None:
-        session = defaultSession
+        session = default_session
 
     def src(segments_processed: int):
         with session.head(url, timeout=3 * 60, headers=headers, allow_redirects=True) as r:
@@ -76,7 +76,7 @@ def http_builder(url: str, headers: dict[str, str | bytes] | None = None, sessio
 
 def m3u8_builder(playlist_url: str, headers: dict[str, str | bytes] | None = None, session: requests.Session | None = None) -> SrcType:
     if session is None:
-        session = defaultSession
+        session = default_session
 
     def get_real_url(url: str):
         return url
@@ -85,7 +85,7 @@ def m3u8_builder(playlist_url: str, headers: dict[str, str | bytes] | None = Non
         #     playlists.pop(0)
         # return playlists[0].absolute_uri
 
-    def ffmpegCorrection(folder: Path, filename: str):
+    def ffmpeg_correction(folder: Path, filename: str):
         tmp_path = folder / ("_"+filename)
         correct_path = folder / filename
         subprocess.run(["ffmpeg", "-y", "-hwaccel", "cuda", "-i", correct_path, tmp_path],
@@ -105,7 +105,7 @@ def m3u8_builder(playlist_url: str, headers: dict[str, str | bytes] | None = Non
                 r.raise_for_status()
                 data = r.content
                 yield data
-    return lambda segments_processed: (stream(segments_processed), segments_processed, n, ffmpegCorrection)
+    return lambda segments_processed: (stream(segments_processed), segments_processed, n, ffmpeg_correction)
 
 
 _download_N: int = 0

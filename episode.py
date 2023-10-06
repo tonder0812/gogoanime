@@ -10,7 +10,7 @@ def get_episode_download_link(session: requests.Session, links: dict[str, str], 
             VideoLinkParser(r.content.decode()) as p
         ):
             r.raise_for_status()
-            return p.downloadLink
+            return p.download_link
     except requests.exceptions.ConnectionError:
         return None
 

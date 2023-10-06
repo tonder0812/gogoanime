@@ -39,10 +39,10 @@ class EMA:
 
 class Prediction:
 
-    def __init__(self, p: AbstractPrinter, fileVar: str, total: int):
+    def __init__(self, p: AbstractPrinter, file_var: str, total: int):
         self._running: bool = True
         self.p = p
-        self.download_id: str = fileVar
+        self.download_id: str = file_var
         self.total: int = total
         self.lock: threading.Lock = threading.Lock()
         self.segments_processed: int = 0

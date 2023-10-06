@@ -27,7 +27,7 @@ class AbstractPrinter(ABC):
             self.formated = True
             self.msg = self.desc.format(**self.data)
 
-    def setDelay(self, delay: float) -> Self:
+    def set_delay(self, delay: float) -> Self:
         with self._lock:
             self.delay = delay
         return self

@@ -23,8 +23,8 @@ class Printer(AbstractPrinter):
         self.scroller = Scroller()
 
         console.init()
-        self.renderThread = Thread(target=self.render)
-        self.renderThread.start()
+        self.render_thread = Thread(target=self.render)
+        self.render_thread.start()
 
     def wait(self) -> Self:
         with self._lock:
@@ -66,7 +66,7 @@ class Printer(AbstractPrinter):
         with self._lock:
             self.stopped = True
 
-        self.renderThread.join()
+        self.render_thread.join()
         console.stop()
         print(remove_control_chars(self.msg))
 

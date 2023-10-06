@@ -37,7 +37,7 @@ class Processing(ProcessingType):
     def update_processed(self, anime: str) -> list[str]:
         processed_eps = []
         with self._lock:
-            idsToDelete: list[str] = []
+            ids_to_delete: list[str] = []
             if anime in self:
                 if len(self[anime]) > 0:
                     processed_eps = [
@@ -45,9 +45,9 @@ class Processing(ProcessingType):
                 self[anime] = {k: v for k,
                                v in self[anime].items() if v}
                 if len(self[anime]) == 0:
-                    idsToDelete.append(anime)
+                    ids_to_delete.append(anime)
 
-            for anime in idsToDelete:
+            for anime in ids_to_delete:
                 del self[anime]
         return processed_eps
 

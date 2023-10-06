@@ -7,7 +7,7 @@ else:
 class VideoLinkParser(Parser):
     def __init__(self, contents: str):
         super().__init__(contents)
-        self.downloadLink = None
+        self.download_link = None
         self.best_resolution = 0
 
     def handle_data(self, data: str):
@@ -23,5 +23,5 @@ class VideoLinkParser(Parser):
 
             resolution = int(dim[0])*int(dim[1])
             if resolution > self.best_resolution and int(dim[1]) >= 720:
-                self.downloadLink = self.curent_tag.attrs.get("href")
+                self.download_link = self.curent_tag.attrs.get("href")
                 self.best_resolution = resolution

@@ -8,7 +8,7 @@ from typing import Self
 AttrDict = dict[str, str | None]
 
 
-def attrsToDict(attrs: list[tuple[str, str | None]]) -> AttrDict:
+def attrs_to_dict(attrs: list[tuple[str, str | None]]) -> AttrDict:
     out: dict[str, str | None] = {}
     for attr in attrs:
         out[attr[0]] = attr[1]
@@ -45,10 +45,10 @@ class Parser(HTMLParser):
         pass
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        attrsDict = attrsToDict(attrs)
-        self.parent_stack.append(TagElem(tag, attrsDict, self.curent_tag))
+        attrs_dict = attrs_to_dict(attrs)
+        self.parent_stack.append(TagElem(tag, attrs_dict, self.curent_tag))
         self.curent_tag = self.parent_stack[-1]
-        self.handle_start(tag, attrsDict)
+        self.handle_start(tag, attrs_dict)
 
     def handle_endtag(self, tag: str):
         self.handle_end(tag)

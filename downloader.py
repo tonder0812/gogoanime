@@ -88,7 +88,7 @@ def download_episode(*,
 
     user_start_downloading(anime_name, ep)
 
-    filename, filenameDesc = generate_filenames(eps, epN, ep)
+    filename, filename_desc = generate_filenames(eps, epN, ep)
 
     if processing is not None:
         processing.start(anime_id, ep)
@@ -97,7 +97,7 @@ def download_episode(*,
         src=http_builder(download_url, session=session),
         folder=anime_folder,
         filename=filename,
-        desc=filenameDesc,
+        desc=filename_desc,
         max_tries=max_tries,
         printr=p,
         size_digits=6,
