@@ -22,12 +22,12 @@ names: dict[str, str] = {}
 infos: dict[str, AnimeInfo] = {}
 
 
-@processing.with_lock()
+@processing.with_lock
 def set_processing(processing: Processing, p: AbstractPrinter):
     p.set("processing", str(processing))
 
 
-@processing.with_lock()
+@processing.with_lock
 def get_watching(processing: Processing, p: AbstractPrinter, names: dict[str, str]) -> dict[str, list[str]]:
     res = _get_watching(names, processing)
     set_processing(p)
@@ -46,7 +46,7 @@ def update_info(session: requests.Session, anime_id: str):
         infos[anime_id] = info
 
 
-@processing.with_lock()
+@processing.with_lock
 def check(processing: Processing, p: AbstractPrinter, session: requests.Session):
     watching = get_watching(p, names)
     for anime_id in watching:

@@ -8,6 +8,9 @@ from episode import episode_order
 ProcessingType = dict[str, dict[str, bool]]
 LockType = Union[threading.RLock, threading.RLock]
 
+T = TypeVar('T')
+P = ParamSpec('P')
+
 
 class Processing(ProcessingType):
     def __init__(self) -> None:
@@ -54,20 +57,15 @@ class Processing(ProcessingType):
     def get_eps(self, anime: str) -> list[str]:
         return list(self.get(anime, {}))
 
-    def with_lock(self):
-        def decorator(func: Callable[Concatenate[Processing, P], T]) -> Callable[P, T]:
-            def f(*args: P.args, **kwargs: P.kwargs) -> T:
-                with self._lock:
-                    return func(self, *args, **kwargs)
-            return f
-        return decorator
+    def with_lock(self, func: Callable[Concatenate["Processing", P], T]) -> Callable[P, T]:
+        def f(*args: P.args, **kwargs: P.kwargs) -> T:
+            with self._lock:
+                return func(self, *args, **kwargs)
+        return f
 
     def __repr__(self) -> str:
         return str(self)
 
-
-T = TypeVar('T')
-P = ParamSpec('P')
 
 
 def parse_watching() -> tuple[dict[str, list[str]], dict[str, str]]:
@@ -116,7 +114,7 @@ def parse_new(watching: dict[str, list[str]], names: dict[str, str]) -> bool:
 def save_watching(watching: dict[str, list[str]], names: dict[str, str]):
     with open(watching_location, "w") as f:
         for anime in watching:
-            f.write(anime + " " + ",".join(sorted(watching[anime],key=episode_order)))
+            f.write(anime + " " + ",".join(sorted(watching[anime], key=episode_order)))
             if (anime in names):
                 f.write(" | " + names[anime])
             f.write("\n")
