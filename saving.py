@@ -67,7 +67,6 @@ class Processing(ProcessingType):
         return str(self)
 
 
-
 def parse_watching() -> tuple[dict[str, list[str]], dict[str, str]]:
     watching: dict[str, list[str]] = {}
     names: dict[str, str] = {}
@@ -102,7 +101,7 @@ def parse_new(watching: dict[str, list[str]], names: dict[str, str]) -> bool:
             id_ = id_.strip()
             if id_ == "":
                 continue
-            if id_ in watching and names[id_] == name:
+            if id_ in watching and names.get(id_, "") == name:
                 continue
             changed = True
             watching[id_] = watching.get(id_, [])
