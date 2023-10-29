@@ -1,7 +1,6 @@
 import time
 from threading import Thread
-from typing import Self
-from typing_extensions import override
+from typing import Self, override
 from printer.abstract_printer import AbstractPrinter
 
 from printer.scroller import Scroller

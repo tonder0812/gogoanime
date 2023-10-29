@@ -1,5 +1,4 @@
-from typing_extensions import override
-
+from typing import override
 from .abstract_printer import AbstractPrinter
 
 
