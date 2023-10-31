@@ -49,7 +49,9 @@ The config folder has 4 files inside:
   - **notification_file_location** the path to a folder containing 2 files `new.txt` and `downloaded.txt` and appends a new line with `<anime_name> - <episode>` to each every time that an episode starts or finishes downloading an episode respectively. **Defaults to `null`** making it not write anything
   - **browser** the browser that has the gogoanime account logged in one of `(chrome, chromium, opera, brave, edge, vivaldi, firefox, safari)`. **Defaults to `chrome`**
   - **cookies_location** the path directly to the cookie file of the corresponding browser. If not set the code uses the default location for the browser
-  - **max_tries** the number of tries permited when downloading an episode must de a positive integer or -1 (infinite). **Defaults to `50`**
+  - **max_full_tries** the number of tries permited when downloading an episode must de a positive integer or -1 (infinite). **Defaults to `50`**
+  - **max_inner_tries** the number of tries permited when downloading a segment of an episode must de a positive integer or -1 (infinite). **Defaults to `50`**
+  - **segments** the number of segments to split the episode into when downloading (each segment is downloaded sepeartly and joined into a single file making it possible to bypass download speed limits) must de a positive integer. **Defaults to `10`**
   - **gogoanime_domain** the domain of the gogoanime site. **Defaults to `gogoanimehd.io`**
 - **new.txt** a text file used to add new anime to the watching list safely if the program is running (one file per line in the format `<anime-id> |` or `<anime-id> | <anime-name>`)
 - **quit.txt** if this file has any content inside the program will finish any download it is doing and close (only works if running in continuous mode)

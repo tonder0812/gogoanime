@@ -1,7 +1,7 @@
-import requests
+import httpx
 
-from parsers import AnimeParser
 from config import gogoanime_domain
+from parsers import AnimeParser
 
 
 class AnimeInfo:
@@ -11,15 +11,17 @@ class AnimeInfo:
         self.logo_url = logo_url
 
 
-def get_anime_info(session: requests.Session, anime_id: str) -> AnimeInfo | None:
+def get_anime_info(client: httpx.Client, anime_id: str) -> AnimeInfo | None:
     try:
-        with (
-            session.get(f"https://{gogoanime_domain}/category/{anime_id}") as r,
-            AnimeParser(r.content.decode()) as p
-        ):
+        r = client.get(f"https://{gogoanime_domain}/category/{anime_id}")
+        with AnimeParser(r.content.decode()) as p:
             r.raise_for_status()
             assert p.id is not None
             assert p.name is not None
             return AnimeInfo(p.id, p.name, p.logo_url)
-    except requests.exceptions.ConnectionError:
+    except httpx.TimeoutException:
+        return None
+    except httpx.NetworkError:
+        return None
+    except httpx.ProtocolError:
         return None

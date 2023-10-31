@@ -5,7 +5,6 @@ from .prioritylock import PriorityRLock
 
 
 class AbstractPrinter(ABC):
-
     def __init__(self) -> None:
         self._lock: PriorityRLock = PriorityRLock()
         self.data: dict[str, Any] = {}
@@ -61,7 +60,9 @@ class AbstractPrinter(ABC):
     def get_desc(self) -> str:
         return self.desc
 
-    def print(self, *args: Any, sep: str = " ", end: str = "\n", escape: bool = True) -> Self:
+    def print(
+        self, *args: Any, sep: str = " ", end: str = "\n", escape: bool = True
+    ) -> Self:
         arg = sep.join(map(str, args))
         if escape:
             arg = arg.replace("{", "{{").replace("}", "}}")

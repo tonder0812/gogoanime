@@ -1,17 +1,17 @@
-
 from enum import Enum
 
 
-def modifiers(capslock: bool,
-              enhanced: bool,
-              left_alt: bool,
-              left_ctrl: bool,
-              numlock: bool,
-              right_alt: bool,
-              right_ctrl: bool,
-              scrolllock: bool,
-              shift: bool
-              ) -> str:
+def modifiers(
+    capslock: bool,
+    enhanced: bool,
+    left_alt: bool,
+    left_ctrl: bool,
+    numlock: bool,
+    right_alt: bool,
+    right_ctrl: bool,
+    scrolllock: bool,
+    shift: bool,
+) -> str:
     res = ""
     if capslock:
         res += "CapsLock,"
@@ -38,18 +38,23 @@ def modifiers(capslock: bool,
 
 
 class Key:
-    def __init__(self, *, pressed: bool, char: str, code: str,
-                 repeat_count: int,
-                 capslock: bool,
-                 enhanced: bool,
-                 left_alt: bool,
-                 left_ctrl: bool,
-                 numlock: bool,
-                 right_alt: bool,
-                 right_ctrl: bool,
-                 scrolllock: bool,
-                 shift: bool
-                 ) -> None:
+    def __init__(
+        self,
+        *,
+        pressed: bool,
+        char: str,
+        code: str,
+        repeat_count: int,
+        capslock: bool,
+        enhanced: bool,
+        left_alt: bool,
+        left_ctrl: bool,
+        numlock: bool,
+        right_alt: bool,
+        right_ctrl: bool,
+        scrolllock: bool,
+        shift: bool,
+    ) -> None:
         self.pressed = pressed
         self.value = char
         self.code = code
@@ -76,17 +81,23 @@ class MouseType(Enum):
 
 
 class Mouse:
-    def __init__(self, *, position: tuple[int, int], type_: MouseType, buttons: list[int], scroll: tuple[float, float],
-                 capslock: bool,
-                 enhanced: bool,
-                 left_alt: bool,
-                 left_ctrl: bool,
-                 numlock: bool,
-                 right_alt: bool,
-                 right_ctrl: bool,
-                 scrolllock: bool,
-                 shift: bool
-                 ) -> None:
+    def __init__(
+        self,
+        *,
+        position: tuple[int, int],
+        type_: MouseType,
+        buttons: list[int],
+        scroll: tuple[float, float],
+        capslock: bool,
+        enhanced: bool,
+        left_alt: bool,
+        left_ctrl: bool,
+        numlock: bool,
+        right_alt: bool,
+        right_ctrl: bool,
+        scrolllock: bool,
+        shift: bool,
+    ) -> None:
         self.position = position
         self.type_ = type_
         self.buttons = buttons

@@ -8,8 +8,8 @@ from episode import episode_order
 ProcessingType = dict[str, dict[str, bool]]
 LockType = Union[threading.RLock, threading.RLock]
 
-T = TypeVar('T')
-P = ParamSpec('P')
+T = TypeVar("T")
+P = ParamSpec("P")
 
 
 class Processing(ProcessingType):
@@ -43,10 +43,8 @@ class Processing(ProcessingType):
             ids_to_delete: list[str] = []
             if anime in self:
                 if len(self[anime]) > 0:
-                    processed_eps = [
-                        k for k, v in self[anime].items() if not v]
-                self[anime] = {k: v for k,
-                               v in self[anime].items() if v}
+                    processed_eps = [k for k, v in self[anime].items() if not v]
+                self[anime] = {k: v for k, v in self[anime].items() if v}
                 if len(self[anime]) == 0:
                     ids_to_delete.append(anime)
 
@@ -57,10 +55,13 @@ class Processing(ProcessingType):
     def get_eps(self, anime: str) -> list[str]:
         return list(self.get(anime, {}))
 
-    def with_lock(self, func: Callable[Concatenate["Processing", P], T]) -> Callable[P, T]:
+    def with_lock(
+        self, func: Callable[Concatenate["Processing", P], T]
+    ) -> Callable[P, T]:
         def f(*args: P.args, **kwargs: P.kwargs) -> T:
             with self._lock:
                 return func(self, *args, **kwargs)
+
         return f
 
     def __repr__(self) -> str:
@@ -114,7 +115,7 @@ def save_watching(watching: dict[str, list[str]], names: dict[str, str]):
     with open(watching_location, "w") as f:
         for anime in watching:
             f.write(anime + " " + ",".join(sorted(watching[anime], key=episode_order)))
-            if (anime in names):
+            if anime in names:
                 f.write(" | " + names[anime])
             f.write("\n")
 

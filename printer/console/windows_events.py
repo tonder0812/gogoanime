@@ -1,4 +1,5 @@
 import os
+
 if os.name == "nt":
     from ctypes import Structure, Union, c_byte, c_char, c_int, c_short, c_wchar
     from ctypes.wintypes import BOOL, DWORD, SHORT, UINT, WORD
@@ -78,30 +79,28 @@ if os.name == "nt":
             return "wheel vertical"
 
     class CHAR_UNION(Union):
-        _fields_ = [("UnicodeChar", c_wchar),
-                    ("AsciiChar", c_char)]
+        _fields_ = [("UnicodeChar", c_wchar), ("AsciiChar", c_char)]
 
         def __str__(self) -> str:
             return repr(self.UnicodeChar)
 
     class KEY_EVENT_RECORD(Structure):
-        _fields_ = [("bKeyDown", c_byte),
-                    ("pad2", c_byte),
-                    ("pad1", c_short),
-                    ("wRepeatCount", c_short),
-                    ("wVirtualKeyCode", c_short),
-                    ("wVirtualScanCode", c_short),
-                    ("uChar", CHAR_UNION),
-                    ("dwControlKeyState", c_int)]
+        _fields_ = [
+            ("bKeyDown", c_byte),
+            ("pad2", c_byte),
+            ("pad1", c_short),
+            ("wRepeatCount", c_short),
+            ("wVirtualKeyCode", c_short),
+            ("wVirtualScanCode", c_short),
+            ("uChar", CHAR_UNION),
+            ("dwControlKeyState", c_int),
+        ]
 
         def __str__(self) -> str:
             return f"{self.uChar} [isDown={'True' if self.bKeyDown else 'False'}, repeatCount={self.wRepeatCount}, modifiers=[{modifiers(self.dwControlKeyState)}]]"
 
     class COORD(Structure):
-        _fields_ = [
-            ("X", SHORT),
-            ("Y", SHORT)
-        ]
+        _fields_ = [("X", SHORT), ("Y", SHORT)]
 
         def __str__(self) -> str:
             return f"{self.X},{self.Y}"
@@ -139,12 +138,13 @@ if os.name == "nt":
                 return "False"
 
     class Event(Union):
-        _fields_ = [("KeyEvent", KEY_EVENT_RECORD),
-                    ("MouseEvent", MOUSE_EVENT_RECORD),
-                    ("WindowBufferSizeEvent", WINDOW_BUFFER_SIZE_RECORD),
-                    ("MenuEvent", MENU_EVENT_RECORD),
-                    ("FocusEvent", FOCUS_EVENT_RECORD)
-                    ]
+        _fields_ = [
+            ("KeyEvent", KEY_EVENT_RECORD),
+            ("MouseEvent", MOUSE_EVENT_RECORD),
+            ("WindowBufferSizeEvent", WINDOW_BUFFER_SIZE_RECORD),
+            ("MenuEvent", MENU_EVENT_RECORD),
+            ("FocusEvent", FOCUS_EVENT_RECORD),
+        ]
 
     class INPUT_RECORD(Structure):
         _fields_ = [("EventType", WORD), ("Event", Event)]
@@ -176,5 +176,5 @@ if os.name == "nt":
         0x0001: "KEY_EVENT",
         0x0008: "MENU_EVENT",
         0x0002: "MOUSE_EVENT",
-        0x0004: "WINDOW_BUFFER_SIZE_EVENT"
+        0x0004: "WINDOW_BUFFER_SIZE_EVENT",
     }

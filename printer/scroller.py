@@ -13,7 +13,7 @@ class Scroller:
 
     def update(self, dx: float, height: float):
         now = time.time()
-        dt = now-self.start_time
+        dt = now - self.start_time
         if dt < 0.01:
             self.saved_velocity += dx
             return
@@ -24,17 +24,17 @@ class Scroller:
 
         if dx != 0:
             self.dir = 1 if dx > 0 else -1
-            self.velocity = 0.8*self.velocity+0.2*abs(dx)/dt
+            self.velocity = 0.8 * self.velocity + 0.2 * abs(dx) / dt
             self.position += dx
         else:
-            self.position += self.dir*self.velocity*dt
-            self.velocity -= DEFAULT_FRICTION*dt
+            self.position += self.dir * self.velocity * dt
+            self.velocity -= DEFAULT_FRICTION * dt
 
-        if (self.position > height):
+        if self.position > height:
             self.position = height
             self.dir = -1
             self.velocity = 0
-        elif (self.position < 0):
+        elif self.position < 0:
             self.position = 0
             self.dir = 1
             self.velocity = 0

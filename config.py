@@ -8,14 +8,16 @@ quit_location = path.join(config_location, "quit.txt")
 watching_location = path.join(config_location, "watching.txt")
 config_json_location = path.join(config_location, "config.json")
 
-valid_browsers = ("chrome",
-                  "chromium",
-                  "opera",
-                  "brave",
-                  "edge",
-                  "vivaldi",
-                  "firefox",
-                  "safari")
+valid_browsers = (
+    "chrome",
+    "chromium",
+    "opera",
+    "brave",
+    "edge",
+    "vivaldi",
+    "firefox",
+    "safari",
+)
 
 with open(config_json_location, "r") as f:
     options = json.load(f)
@@ -26,7 +28,9 @@ if not download_path.exists() or not download_path.is_dir():
     exit(1)
 
 notification_file_location = options.get("notification_file_location")
-if notification_file_location is not None and not isinstance(notification_file_location, str):
+if notification_file_location is not None and not isinstance(
+    notification_file_location, str
+):
     print("Invalid config: notification_file_location, must be a string or null")
     exit(1)
 
@@ -42,9 +46,23 @@ if cookies_location is not None and not isinstance(cookies_location, str):
     print(f"Invalid config: cookies_location, must be a string or null")
     exit(1)
 
-max_tries = options.get("max_tries", 50)
-if not isinstance(max_tries, int) or (max_tries != -1 and max_tries <= 0):
-    print(f"Invalid config: max_tries, must be a positive integer or -1")
+max_full_tries = options.get("max_full_tries", 50)
+if not isinstance(max_full_tries, int) or (
+    max_full_tries != -1 and max_full_tries <= 0
+):
+    print(f"Invalid config: max_full_tries, must be a positive integer or -1")
+    exit(1)
+
+max_inner_tries = options.get("max_inner_tries", 50)
+if not isinstance(max_inner_tries, int) or (
+    max_inner_tries != -1 and max_inner_tries <= 0
+):
+    print(f"Invalid config: max_inner_tries, must be a positive integer or -1")
+    exit(1)
+
+segments = options.get("segments", 10)
+if not isinstance(segments, int) or (segments <= 0):
+    print(f"Invalid config: segments, must be a positive integer")
     exit(1)
 
 gogoanime_domain = options.get("gogoanime_domain", "gogoanimehd.io")
@@ -55,11 +73,17 @@ if not isinstance(gogoanime_domain, str):
 
 def user_end_download(filename: Path, success: bool, data: str):
     if success and notification_file_location is not None:
-        with open(path.join(notification_file_location, "downloaded.txt"), "a", encoding="utf-8") as f:
+        with open(
+            path.join(notification_file_location, "downloaded.txt"),
+            "a",
+            encoding="utf-8",
+        ) as f:
             f.write(f"{data}\n")
 
 
 def user_start_downloading(show_name: str, ep: str):
     if notification_file_location is not None:
-        with open(path.join(notification_file_location, "new.txt"), "a", encoding="utf-8") as f:
+        with open(
+            path.join(notification_file_location, "new.txt"), "a", encoding="utf-8"
+        ) as f:
             f.write(f"{show_name} - {ep}\n")

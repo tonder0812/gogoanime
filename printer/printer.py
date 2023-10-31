@@ -11,7 +11,6 @@ import printer.console as console
 
 
 class Printer(AbstractPrinter):
-
     def __init__(self):
         super().__init__()
 
@@ -71,7 +70,6 @@ class Printer(AbstractPrinter):
 
     def render(self) -> None:
         while True:
-
             if not self.waiting:
                 self.__render()
 
@@ -102,9 +100,7 @@ class Printer(AbstractPrinter):
                         velocity -= event.scroll[1]
             # Get Terminal size
             self.height, self.width = console.get_size()
-            rows = calc_rows(self.msg, self.width)-2
-            self.scroller.update(
-                1*velocity, rows)
+            rows = calc_rows(self.msg, self.width) - 2
+            self.scroller.update(1 * velocity, rows)
             # Render message
-            console.set_text(self.msg, int(
-                self.scroller.position), should_set_cursor)
+            console.set_text(self.msg, int(self.scroller.position), should_set_cursor)

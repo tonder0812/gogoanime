@@ -1,4 +1,3 @@
-
 import re
 from html import unescape
 from html.parser import HTMLParser
@@ -16,7 +15,6 @@ def attrs_to_dict(attrs: list[tuple[str, str | None]]) -> AttrDict:
 
 
 class TagElem:
-
     INVALID: Self
 
     def __init__(self, tag: str, attrs: AttrDict, parent: Self | None = None):
@@ -53,7 +51,7 @@ class Parser(HTMLParser):
     def handle_endtag(self, tag: str):
         self.handle_end(tag)
         self.parent_stack.pop()
-        if (len(self.parent_stack) > 0):
+        if len(self.parent_stack) > 0:
             self.curent_tag = self.parent_stack[-1]
         else:
             self.curent_tag = TagElem.INVALID
@@ -68,8 +66,8 @@ class Parser(HTMLParser):
 
         # Now parse the data between i+1 and j into a tag and attrs
         attrs = []
-        match = tagfind_tolerant.match(rawdata, i+1)
-        assert match, 'unexpected call to parse_starttag()'
+        match = tagfind_tolerant.match(rawdata, i + 1)
+        assert match, "unexpected call to parse_starttag()"
         k = match.end()
         self.lasttag = tag = match.group(1).lower()
         while k < endpos:
@@ -79,8 +77,10 @@ class Parser(HTMLParser):
             attrname, rest, attrvalue = m.group(1, 2, 3)
             if not rest:
                 attrvalue = None
-            elif attrvalue[:1] == '\'' == attrvalue[-1:] or \
-                    attrvalue[:1] == '"' == attrvalue[-1:]:
+            elif (
+                attrvalue[:1] == "'" == attrvalue[-1:]
+                or attrvalue[:1] == '"' == attrvalue[-1:]
+            ):
                 attrvalue = attrvalue[1:-1]
             if attrvalue:
                 attrvalue = unescape(attrvalue)
@@ -91,12 +91,28 @@ class Parser(HTMLParser):
         if end not in (">", "/>"):
             self.handle_data(rawdata[i:endpos])
             return endpos
-        if end.endswith('/>'):
+        if end.endswith("/>"):
             # XHTML-style empty tag: <span attr="value" />
             self.handle_startendtag(tag, attrs)
-        elif end.endswith('>') and tag in frozenset(['area', 'base', 'br', 'col', 'embed', 'hr', 'img',
-                                                     'input', 'keygen',    'link', 'meta', 'param', 'source', 'track',
-                                                     'wbr']):
+        elif end.endswith(">") and tag in frozenset(
+            [
+                "area",
+                "base",
+                "br",
+                "col",
+                "embed",
+                "hr",
+                "img",
+                "input",
+                "keygen",
+                "link",
+                "meta",
+                "param",
+                "source",
+                "track",
+                "wbr",
+            ]
+        ):
             self.handle_startendtag(tag, attrs)
         else:
             self.handle_starttag(tag, attrs)
@@ -109,15 +125,18 @@ class Parser(HTMLParser):
         self.close()
         return self
 
-    def __exit__(self,
-                 exception_type: type[BaseException] | None,
-                 exception_value: BaseException | None,
-                 traceback: TracebackType | None) -> None:
+    def __exit__(
+        self,
+        exception_type: type[BaseException] | None,
+        exception_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         self.parent_stack = []
         self.curent_tag = TagElem.INVALID
 
 
-tagfind_tolerant = re.compile(r'([a-zA-Z][^\t\n\r\f />\x00]*)(?:\s|/(?!>))*')
+tagfind_tolerant = re.compile(r"([a-zA-Z][^\t\n\r\f />\x00]*)(?:\s|/(?!>))*")
 attrfind_tolerant = re.compile(
     r'((?<=[\'"\s/])[^\s/>][^\s/=>]*)(\s*=+\s*'
-    r'(\'[^\']*\'|"[^"]*"|(?![\'"])[^>\s]*))?(?:\s|/(?!>))*')
+    r'(\'[^\']*\'|"[^"]*"|(?![\'"])[^>\s]*))?(?:\s|/(?!>))*'
+)

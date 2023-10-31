@@ -3,7 +3,6 @@ from .abstract_printer import AbstractPrinter
 
 
 class FakePrinter(AbstractPrinter):
-
     def __init__(self):
         super().__init__()
 

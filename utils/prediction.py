@@ -34,11 +34,10 @@ class EMA:
         if x is not None:
             self.last = self.alpha * x + beta * self.last
             self.calls += 1
-        return self.last / (1 - beta ** self.calls) if self.calls else self.last
+        return self.last / (1 - beta**self.calls) if self.calls else self.last
 
 
 class Prediction:
-
     def __init__(self, p: AbstractPrinter, file_var: str, total: int):
         self._running: bool = True
         self.p = p
@@ -52,11 +51,12 @@ class Prediction:
     def stop(self):
         with self.lock:
             self._running = False
+            self.p.set(self.download_id + "_estimated", format_time(0))
 
-    def add(self):
+    def add(self, amt: int = 1):
         with self.lock:
-            self.segments_processed += 1
-            self.segments_processed_since_last_update += 1
+            self.segments_processed += amt
+            self.segments_processed_since_last_update += amt
 
     def run(self):
         last = time.perf_counter()
@@ -67,12 +67,15 @@ class Prediction:
                 delta = cur - last
                 if self.segments_processed_since_last_update > 0:
                     prediction = self.prediction(
-                        delta / self.segments_processed_since_last_update)
+                        delta / self.segments_processed_since_last_update
+                    )
                     last = cur
                     self.segments_processed_since_last_update = 0
-                    file_stats = self.p.get(self.download_id)
-                    file_stats["updated"] = time.asctime()
-                    file_stats["estimated"] = format_time(
-                        prediction * (self.total - self.segments_processed))
-                    self.p.set(self.download_id, file_stats)
+                    self.p.set(
+                        self.download_id + "_estimated",
+                        format_time(
+                            prediction * (self.total - self.segments_processed)
+                        ),
+                    )
+                    self.p.set(self.download_id + "_updated", time.asctime())
             time.sleep(1)

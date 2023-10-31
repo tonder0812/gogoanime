@@ -14,7 +14,10 @@ class EpListParser(Parser):
         if data == "":
             return
 
-        if (self.curent_tag.tag == "div" and self.curent_tag.attrs.get("class") == "name"):
+        if (
+            self.curent_tag.tag == "div"
+            and self.curent_tag.attrs.get("class") == "name"
+        ):
             link = self.curent_tag.parent.attrs.get("href")
             assert link is not None
             self.links[data] = link.strip()

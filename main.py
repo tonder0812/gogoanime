@@ -1,9 +1,9 @@
-from pathlib import Path
 import sys
 import threading
+from pathlib import Path
 from typing import Any, Callable
 
-import requests
+import httpx
 
 from anime import get_anime_info
 from config import download_path, user_end_download
@@ -21,19 +21,20 @@ def input_ep_list(p: AbstractPrinter, typ: str, lst: list[str]):
         ep = p.input()
 
 
-def callback(anime_id: str, ep: str, processing: Processing | None) -> Callable[[Path, bool, Any, str], None]:
+def callback(
+    anime_id: str, ep: str, processing: Processing | None
+) -> Callable[[Path, bool, Any, str], None]:
     def cb(filename: Path, success: bool, data: Any, _: str):
         user_end_download(filename, success, data)
         if processing is not None:
             processing.finish(anime_id, ep, success)
         if not success:
             threads: list[threading.Thread] = []
-
-            info = get_anime_info(s, anime_id)
+            info = get_anime_info(client, anime_id)
             while info is None:
-                info = get_anime_info(s, anime_id)
+                info = get_anime_info(client, anime_id)
             download_anime(
-                session=s,
+                client=client,
                 base_path=base_path,
                 anime_id=anime_id,
                 blacklist=blacklist,
@@ -43,15 +44,16 @@ def callback(anime_id: str, ep: str, processing: Processing | None) -> Callable[
                 p=p,
                 threads=threads,
                 processing=processing,
-                callback=callback
+                callback=callback,
             )
             for t in threads:
                 t.join()
+
     return cb
 
 
 p: AbstractPrinter = Printer()
-s = requests.Session()
+client = httpx.Client()
 blacklist: list[str] | None = None
 whitelist: list[str] | None = None
 base_path: Path = download_path
@@ -105,14 +107,14 @@ def main():
         if not base_path.exists() or not base_path.is_dir():
             p.print("Download folder must exist")
 
-        s.cookies.update(load_cookies())
+        client.cookies.update(load_cookies())
 
-        info = get_anime_info(s, anime_id)
+        info = get_anime_info(client, anime_id)
         while info is None:
-            info = get_anime_info(s, anime_id)
+            info = get_anime_info(client, anime_id)
 
         download_anime(
-            session=s,
+            client=client,
             base_path=base_path,
             anime_id=anime_id,
             blacklist=blacklist,
@@ -122,7 +124,7 @@ def main():
             p=p,
             threads=threads,
             processing=processing,
-            callback=callback
+            callback=callback,
         )
     except Exception:
         pass

@@ -40,12 +40,14 @@ widths = {
     65510: 2,
     120831: 1,
     262141: 2,
-    1114109: 1
+    1114109: 1,
 }
 
 ALLOWED_NON_PRINTABLE_CHARS = {"\n", "\t"}
 NOPRINT_TRANS_TABLE = {
-    i: None for i in range(0, sys.maxunicode + 1) if not chr(i).isprintable() and chr(i) not in ALLOWED_NON_PRINTABLE_CHARS
+    i: None
+    for i in range(0, sys.maxunicode + 1)
+    if not chr(i).isprintable() and chr(i) not in ALLOWED_NON_PRINTABLE_CHARS
 }
 
 
@@ -57,7 +59,7 @@ def get_width(char: str) -> int:
     x = ord(char)
     if x in NOPRINT_TRANS_TABLE:
         return -1
-    if x == 0x0e or x == 0x0f:
+    if x == 0x0E or x == 0x0F:
         return 0
     for code, width in widths.items():
         if x <= code:
@@ -76,8 +78,8 @@ def set_tabsize(x: int):
 def length(text: str) -> int:
     total: int = 0
     for c in text:
-        if (c == "\t"):
-            total += tabsize-(total % tabsize)
+        if c == "\t":
+            total += tabsize - (total % tabsize)
         else:
             total += get_width(c)
     return total
@@ -90,14 +92,14 @@ def cut_unicode(text: str, width: int) -> tuple[str, str]:
     for c in safe:
         tab = 0
         if c == "\t":
-            tab = tabsize-(res_len % tabsize)
+            tab = tabsize - (res_len % tabsize)
             res_len += tab
         else:
             res_len += get_width(c)
-        if (res_len >= width):
+        if res_len >= width:
             break
         if c == "\t":
-            res += " "*tab
+            res += " " * tab
         else:
             res += c
         text = text[1:]
@@ -114,19 +116,21 @@ def calc_rows(text: str, width: int) -> int:
     return current
 
 
-def split_lines_width(text: str, width: int, height: int, start_line: int) -> Generator[str, None, None]:
+def split_lines_width(
+    text: str, width: int, height: int, start_line: int
+) -> Generator[str, None, None]:
     current_line = 0
     for line in text.split("\n"):
         while length(line) >= width:
             current_line += 1
             s, line = cut_unicode(line, width)
             if current_line > start_line:
-                if current_line-start_line >= height:
+                if current_line - start_line >= height:
                     return
                 yield s
         current_line += 1
         if current_line > start_line:
-            if current_line-start_line >= height:
+            if current_line - start_line >= height:
                 return
             s, line = cut_unicode(line, width)
             yield s

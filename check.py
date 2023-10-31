@@ -4,7 +4,7 @@ import threading
 import time
 import traceback
 
-import requests
+import httpx
 
 from anime import AnimeInfo, get_anime_info
 from config import download_path, quit_location
@@ -28,7 +28,9 @@ def set_processing(processing: Processing, p: AbstractPrinter):
 
 
 @processing.with_lock
-def get_watching(processing: Processing, p: AbstractPrinter, names: dict[str, str]) -> dict[str, list[str]]:
+def get_watching(
+    processing: Processing, p: AbstractPrinter, names: dict[str, str]
+) -> dict[str, list[str]]:
     res = _get_watching(names, processing)
     set_processing(p)
     return res
@@ -38,28 +40,28 @@ def invalid_info(anime_id: str):
     return anime_id not in infos or infos[anime_id].logo_url is None
 
 
-def update_info(session: requests.Session, anime_id: str):
+def update_info(client: httpx.Client, anime_id: str):
     if invalid_info(anime_id):
-        info = get_anime_info(session, anime_id)
+        info = get_anime_info(client, anime_id)
         if info is None:
             return
         infos[anime_id] = info
 
 
 @processing.with_lock
-def check(processing: Processing, p: AbstractPrinter, session: requests.Session):
+def check(processing: Processing, p: AbstractPrinter, client: httpx.Client):
     watching = get_watching(p, names)
     for anime_id in watching:
         time.sleep(1)
-        os.system("title checking "+anime_id)
+        os.system("title checking " + anime_id)
 
-        update_info(session, anime_id)
+        update_info(client, anime_id)
 
         if invalid_info(anime_id):
             continue
 
         if download_anime(
-            session=session,
+            client=client,
             base_path=download_path,
             anime_id=anime_id,
             blacklist=watching[anime_id],
@@ -67,7 +69,7 @@ def check(processing: Processing, p: AbstractPrinter, session: requests.Session)
             names=names,
             p=p,
             threads=threads,
-            processing=processing
+            processing=processing,
         ):
             p.add_desc("\nTime to next check:{timer}s\n")
             p.print("----------------------------")
@@ -88,8 +90,11 @@ def raise_for_quit(p: AbstractPrinter):
 def main():
     p = Printer()
 
-    session = requests.Session()
-    session.cookies.update(load_cookies())
+    client = httpx.Client(
+        limits=httpx.Limits(max_connections=None, max_keepalive_connections=None),
+        follow_redirects=True,
+    )
+    client.cookies.update(load_cookies())
 
     p.set("timer", CHECK_INTERVAL)
 
@@ -106,7 +111,7 @@ def main():
             p.set("timer", CHECK_INTERVAL)
             os.system("title checking")
             try:
-                check(p, session)
+                check(p, client)
             except Exception as e:
                 p.print("Check failed:")
                 p.print(e)

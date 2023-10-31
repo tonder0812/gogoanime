@@ -39,6 +39,7 @@ class PriorityLock:
     >>> # the first thread to be executed is non-deterministic
     >>> assert thread_exec_order[1:] == list(sorted(thread_exec_order[1:]))
     """
+
     class _Context:
         def __init__(self, lock: "PriorityLock", priority: int):
             self._lock = lock
@@ -47,15 +48,19 @@ class PriorityLock:
         def __enter__(self):
             self._lock.acquire(self._priority)
 
-        def __exit__(self, exc_type: type[BaseException] | None,
-                     exc_val: BaseException | None,
-                     exc_tb: TracebackType | None):
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_val: BaseException | None,
+            exc_tb: TracebackType | None,
+        ):
             self._lock.release()
 
     def __init__(self):
         self._lock = threading.Lock()
-        self._acquire_queue: queue.PriorityQueue[PrioritizedItem] = queue.PriorityQueue(
-        )
+        self._acquire_queue: queue.PriorityQueue[
+            PrioritizedItem
+        ] = queue.PriorityQueue()
         self._need_to_wait = False
 
     def acquire(self, priority: int):
@@ -64,8 +69,7 @@ class PriorityLock:
                 self._need_to_wait = True
                 return True
             event = threading.Event()
-            self._acquire_queue.put(
-                PrioritizedItem(priority, event))
+            self._acquire_queue.put(PrioritizedItem(priority, event))
         event.wait()
         return True
 
@@ -91,9 +95,12 @@ class PriorityRLock:
         def __enter__(self):
             self._lock.acquire(self._priority)
 
-        def __exit__(self, exc_type: type[BaseException] | None,
-                     exc_val: BaseException | None,
-                     exc_tb: TracebackType | None):
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_val: BaseException | None,
+            exc_tb: TracebackType | None,
+        ):
             self._lock.release()
 
     def __init__(self) -> None:
@@ -122,10 +129,12 @@ class PriorityRLock:
             self._owner = None
             self._lock.release()
 
-    def __exit__(self,
-                 exc_type: type[BaseException] | None,
-                 exc_val: BaseException | None,
-                 exc_tb: TracebackType | None):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ):
         self.release()
 
     def __call__(self, priority: int):

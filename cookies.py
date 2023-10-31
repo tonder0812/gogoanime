@@ -1,4 +1,3 @@
-
 from http.cookiejar import CookieJar
 
 import browser_cookie3
@@ -13,7 +12,7 @@ loaders = {
     "edge": browser_cookie3.edge,
     "vivaldi": browser_cookie3.vivaldi,
     "firefox": browser_cookie3.firefox,
-    "safari": browser_cookie3.safari
+    "safari": browser_cookie3.safari,
 }
 
 

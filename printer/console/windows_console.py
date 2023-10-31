@@ -1,4 +1,5 @@
 import os
+
 if os.name == "nt":
     import ctypes
     from ctypes import byref
@@ -7,23 +8,45 @@ if os.name == "nt":
 
     from .common import Key, Mouse, MouseType
     from .utils import length, remove_control_chars, split_lines_width
-    from .windows_api import (DISABLE_NEWLINE_AUTO_RETURN, ENABLE_EXTENDED_FLAGS,
-                              ENABLE_MOUSE_INPUT, ENABLE_PROCESSED_INPUT,
-                              ENABLE_QUICK_EDIT_MODE,
-                              ENABLE_VIRTUAL_TERMINAL_PROCESSING,
-                              ENABLE_WINDOW_INPUT, disable_scroll, enable_scroll,
-                              get_console_mode, kernel, set_console_mode)
-    from .windows_events import (CAPSLOCK_ON, DOUBLE_CLICK, ENHANCED_KEY,
-                                 FOCUS_EVENT, INPUT_RECORD, KEY_EVENT,
-                                 LEFT_ALT_PRESSED, LEFT_CTRL_PRESSED, MENU_EVENT,
-                                 MOUSE_EVENT, MOUSE_HWHEELED, MOUSE_MOVED,
-                                 MOUSE_WHEELED, NUMLOCK_ON, RIGHT_ALT_PRESSED,
-                                 RIGHT_CTRL_PRESSED, SCROLLLOCK_ON, SHIFT_PRESSED,
-                                 WINDOW_BUFFER_SIZE_EVENT)
+    from .windows_api import (
+        DISABLE_NEWLINE_AUTO_RETURN,
+        ENABLE_EXTENDED_FLAGS,
+        ENABLE_MOUSE_INPUT,
+        ENABLE_PROCESSED_INPUT,
+        ENABLE_QUICK_EDIT_MODE,
+        ENABLE_VIRTUAL_TERMINAL_PROCESSING,
+        ENABLE_WINDOW_INPUT,
+        disable_scroll,
+        enable_scroll,
+        get_console_mode,
+        kernel,
+        set_console_mode,
+    )
+    from .windows_events import (
+        CAPSLOCK_ON,
+        DOUBLE_CLICK,
+        ENHANCED_KEY,
+        FOCUS_EVENT,
+        INPUT_RECORD,
+        KEY_EVENT,
+        LEFT_ALT_PRESSED,
+        LEFT_CTRL_PRESSED,
+        MENU_EVENT,
+        MOUSE_EVENT,
+        MOUSE_HWHEELED,
+        MOUSE_MOVED,
+        MOUSE_WHEELED,
+        NUMLOCK_ON,
+        RIGHT_ALT_PRESSED,
+        RIGHT_CTRL_PRESSED,
+        SCROLLLOCK_ON,
+        SHIFT_PRESSED,
+        WINDOW_BUFFER_SIZE_EVENT,
+    )
     from .windows_vk import get_key_count, get_name, process_key_event
 
     def execute_ansii_escape_sequence(sequence: str):
-        print("\033"+sequence, end="", flush=True)
+        print("\033" + sequence, end="", flush=True)
 
     def move_cursor(y: int, x: int):
         execute_ansii_escape_sequence("[%d;%dH" % (y, x))
@@ -44,16 +67,18 @@ if os.name == "nt":
         original_out_mode = get_console_mode(True)
         original_in_mode = get_console_mode(False)
         disable_scroll()
-        requested_out_mode = ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN
+        requested_out_mode = (
+            ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN
+        )
         requested_in_modes = (  # ENABLE_VIRTUAL_TERMINAL_INPUT |
-            ENABLE_PROCESSED_INPUT |
-            ENABLE_EXTENDED_FLAGS |
-            ENABLE_WINDOW_INPUT |
-            ENABLE_MOUSE_INPUT)
+            ENABLE_PROCESSED_INPUT
+            | ENABLE_EXTENDED_FLAGS
+            | ENABLE_WINDOW_INPUT
+            | ENABLE_MOUSE_INPUT
+        )
 
         new_out_mode = original_out_mode | requested_out_mode
-        new_in_mode = (original_in_mode |
-                       requested_in_modes) & ~ENABLE_QUICK_EDIT_MODE
+        new_in_mode = (original_in_mode | requested_in_modes) & ~ENABLE_QUICK_EDIT_MODE
 
         set_console_mode(new_out_mode, True)
         set_console_mode(new_in_mode, False)
@@ -88,8 +113,10 @@ if os.name == "nt":
             return poll_events()
 
         if save_ip.EventType == WINDOW_BUFFER_SIZE_EVENT:
-            terminal_size = (save_ip.Event.WindowBufferSizeEvent.dwSize.Y,
-                             save_ip.Event.WindowBufferSizeEvent.dwSize.X)
+            terminal_size = (
+                save_ip.Event.WindowBufferSizeEvent.dwSize.Y,
+                save_ip.Event.WindowBufferSizeEvent.dwSize.X,
+            )
             return poll_events()
         if save_ip.EventType == FOCUS_EVENT:
             focus = save_ip.Event.FocusEvent.bSetFocus
@@ -122,16 +149,15 @@ if os.name == "nt":
             event = save_ip.Event.MouseEvent
             type_ = MouseType.PRESSED_CHANGE
             buttons = [
-                i+1 for i in range(32) if (event.dwButtonState & (1 << i)) != 0]
+                i + 1 for i in range(32) if (event.dwButtonState & (1 << i)) != 0
+            ]
             scroll = (0, 0)
             if event.dwEventFlags == MOUSE_WHEELED:
-                scroll = (0, ctypes.c_int16(
-                    event.dwButtonState >> 16).value/120)
+                scroll = (0, ctypes.c_int16(event.dwButtonState >> 16).value / 120)
                 buttons = []
                 type_ = MouseType.SCROLL
             if event.dwEventFlags == MOUSE_HWHEELED:
-                scroll = (ctypes.c_int16(
-                    event.dwButtonState >> 16).value/120, 0)
+                scroll = (ctypes.c_int16(event.dwButtonState >> 16).value / 120, 0)
                 buttons = []
                 type_ = MouseType.SCROLL
             if event.dwEventFlags == MOUSE_MOVED:
@@ -168,11 +194,11 @@ if os.name == "nt":
         i = 0
         msg = ""
         for line in split_lines_width(remove_control_chars(text), cols, rows, start):
-            msg += line+" "*(cols-length(line))+""
-            last_cursor = i+1, length(line)+1
+            msg += line + " " * (cols - length(line))
+            last_cursor = i + 1, length(line) + 1
             i += 1
-        for line in range(i, rows-1):
-            msg += " "*cols+""
+        for line in range(i, rows - 1):
+            msg += " " * cols
         print(msg, end="", flush=True)
         if should_set_cursor:
             move_cursor(*last_cursor)

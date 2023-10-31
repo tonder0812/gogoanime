@@ -1,4 +1,5 @@
 import os
+
 if os.name == "nt":
     import ctypes
     from ctypes import wintypes
@@ -23,7 +24,6 @@ if os.name == "nt":
     ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004  # VT100 (Win 10)
     DISABLE_NEWLINE_AUTO_RETURN = 0x0008
 
-
     def check_zero(result: Any, func: Any, args: Any) -> Any:
         if not result:
             err = ctypes.get_last_error()
@@ -31,34 +31,32 @@ if os.name == "nt":
                 raise ctypes.WinError(err)
         return args
 
-
-    if not hasattr(wintypes, 'LPDWORD'):  # PY2
+    if not hasattr(wintypes, "LPDWORD"):  # PY2
         wintypes.LPDWORD = ctypes.POINTER(wintypes.DWORD)
 
     kernel.GetConsoleMode.errcheck = check_zero
     kernel.GetConsoleMode.argtypes = (
-        wintypes.HANDLE,   # _In_  hConsoleHandle
-        wintypes.LPDWORD,)  # _Out_ lpMode
+        wintypes.HANDLE,  # _In_  hConsoleHandle
+        wintypes.LPDWORD,  # _Out_ lpMode
+    )
 
     kernel.SetConsoleMode.errcheck = check_zero
     kernel.SetConsoleMode.argtypes = (
         wintypes.HANDLE,  # _In_  hConsoleHandle
-        wintypes.DWORD,)  # _Out_ lpMode
-
+        wintypes.DWORD,  # _Out_ lpMode
+    )
 
     def disable_scroll():
         user32.ShowScrollBar(kernel.GetConsoleWindow(), 1, 0)
 
-
     def enable_scroll():
         user32.ShowScrollBar(kernel.GetConsoleWindow(), 1, 1)
 
-
     def get_console_mode(output: bool = False) -> int:
-        '''Get the mode of the active console input or output
+        """Get the mode of the active console input or output
         buffer. Note that if the process isn't attached to a
         console, this function raises an EBADF IOError.
-        '''
+        """
         mode = wintypes.DWORD()
         if output:
             hCon = kernel.GetStdHandle(STD_OUTPUT_HANDLE)
@@ -67,12 +65,11 @@ if os.name == "nt":
         kernel.GetConsoleMode(hCon, ctypes.byref(mode))
         return mode.value
 
-
     def set_console_mode(mode: int, output: bool = False):
-        '''Set the mode of the active console input or output
+        """Set the mode of the active console input or output
         buffer. Note that if the process isn't attached to a
         console, this function raises an EBADF IOError.
-        '''
+        """
         if output:
             hCon = kernel.GetStdHandle(STD_OUTPUT_HANDLE)
         else:

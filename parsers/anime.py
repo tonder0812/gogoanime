@@ -16,7 +16,10 @@ class AnimeParser(Parser):
             self.id = attrs["value"]
             return
 
-        if tag == "img" and self.curent_tag.parent.attrs.get("class") == "anime_info_body_bg":
+        if (
+            tag == "img"
+            and self.curent_tag.parent.attrs.get("class") == "anime_info_body_bg"
+        ):
             self.logo_url = attrs.get("src")
 
     def handle_data(self, data: str):
@@ -24,5 +27,8 @@ class AnimeParser(Parser):
         if data == "":
             return
 
-        if self.curent_tag.tag == "h1" and self.curent_tag.parent.attrs.get("class") == "anime_info_body_bg":
+        if (
+            self.curent_tag.tag == "h1"
+            and self.curent_tag.parent.attrs.get("class") == "anime_info_body_bg"
+        ):
             self.name = data
