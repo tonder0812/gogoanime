@@ -46,7 +46,7 @@ The config folder has 4 files inside:
 
 - **config.json** a json file that can have the following options
   - **download_path** the path to a folder where to save the downloaded anime. **Defaults to `./Downloads`**
-  - **notification_file_location** the path to a folder containing 2 files `new.txt` and `downloaded.txt` and appends a new line with `<anime_name> - <episode>` to each every time that an episode starts or finishes downloading an episode respectively. **Defaults to `null`** making it not write anything
+  - **notification_file_location** the path to a folder containing 2 files `new.txt` and `downloaded.txt` and appends a new line with `<anime_name> - <episode>` to each every time that an episode starts or finishes downloading respectively. **Defaults to `null`** making it not write anything
   - **browser** the browser that has the gogoanime account logged in one of `(chrome, chromium, opera, brave, edge, vivaldi, firefox, safari)`. **Defaults to `chrome`**
   - **cookies_location** the path directly to the cookie file of the corresponding browser. If not set the code uses the default location for the browser
   - **max_full_tries** the number of tries permited when downloading an episode must de a positive integer or -1 (infinite). **Defaults to `50`**
