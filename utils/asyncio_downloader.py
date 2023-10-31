@@ -215,6 +215,8 @@ class DownloadTask:
         self.ranges = calculate_ranges(self.size, self.segments)
 
         debug_log("========================================================")
+        debug_log(self.download_id)
+        debug_log(self.filename)
         debug_log(f"segments {self.segments} size {segment_size}")
         debug_log(self.ranges)
         debug_log(self.supports_range)
@@ -262,7 +264,6 @@ class DownloadTask:
         count = 0
         start = self.ranges[index]
         end = self.ranges[index + 1]
-        debug_log(f"start {self.download_id} {start} {end}")
 
         for _ in tries_iterator(tries):
             if self.error:
