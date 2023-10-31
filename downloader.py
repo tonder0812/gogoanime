@@ -111,8 +111,6 @@ def download_episode(
     if p is None:
         p = FakePrinter()
 
-    user_start_downloading(anime_name, ep)
-
     filename, filename_desc = generate_filenames(eps, epN, ep)
 
     if processing is not None:
@@ -135,7 +133,8 @@ def download_episode(
         segments=segments,
         printr=p,
         size_digits=9,
-        cb=callback(anime_id, ep, processing),
+        cb_start=user_start_downloading,
+        cb_end=callback(anime_id, ep, processing),
         cb_data=f"{anime_name} - {ep}\n",
     )
     t.start()

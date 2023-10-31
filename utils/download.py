@@ -17,6 +17,35 @@ _download_N_lock: threading.Lock = threading.Lock()
 T = TypeVar("T")
 
 
+async def run_download(
+    task: DownloadTask,
+    full_tries: int,
+    inner_tries: int,
+    cb: Callable[[T], None] | None = None,
+    cb_data: T = None,
+) -> bool:
+    first = True
+    for try_ in tries_iterator(full_tries):
+        task.printr.set(task.download_id + "_try", try_)
+        try:
+            if not await task.setup(inner_tries):
+                break
+
+            if first:
+                cb(cb_data)
+                first = False
+
+            async with asyncio.TaskGroup() as tg:
+                for i in range(task.segments):
+                    tg.create_task(task.multidown(inner_tries, i))
+
+            if all(task.completed):
+                return True
+        finally:
+            task.stop()
+    return False
+
+
 def download_file(
     *,
     src: SrcGeneratorType,
@@ -29,7 +58,8 @@ def download_file(
     segments: int = 10,
     printr: AbstractPrinter | None = None,
     size_digits: int = 9,
-    cb: (Callable[[Path, bool, T, str], None] | None) = None,
+    cb_start: (Callable[[T], None] | None) = None,
+    cb_end: (Callable[[Path, bool, T, str], None] | None) = None,
     cb_data: T = None,
     download_id: str | None = None,
 ) -> tuple[Path, bool]:
@@ -80,7 +110,9 @@ def download_file(
         segments=segments,
     )
     try:
-        success = asyncio.run(task.run(max_full_tries, max_inner_tries))
+        success = asyncio.run(
+            run_download(task, max_full_tries, max_inner_tries, cb_start, cb_data)
+        )
     except Exception as e:
         debug_log("========================================================")
         debug_log(e)
@@ -108,15 +140,14 @@ def download_file(
         printr.set(download_id + "_estimated", format_time(0))
         debug_log("========================================================")
         debug_log(download_id)
-        debug_log(task.error)
         debug_log(task.completed)
         debug_log(task.filename)
         debug_log(task.ranges)
         debug_log(task.received)
         debug_log(task.segments)
         debug_log(task.size)
-    if cb:
-        cb(local_filename, success, cb_data, download_id)
+    if cb_end:
+        cb_end(local_filename, success, cb_data, download_id)
 
     return (temp_filename, success)
 
@@ -133,7 +164,8 @@ def download_file_threaded(
     max_inner_tries: int = 50,
     printr: AbstractPrinter | None = None,
     size_digits: int = 9,
-    cb: (Callable[[Path, bool, T, str], None] | None) = None,
+    cb_start: (Callable[[T], None] | None) = None,
+    cb_end: (Callable[[Path, bool, T, str], None] | None) = None,
     cb_data: T = None,
     download_id: str | None = None,
 ) -> threading.Thread:
@@ -152,7 +184,8 @@ def download_file_threaded(
             "segments": segments,
             "printr": printr,
             "size_digits": size_digits,
-            "cb": cb,
+            "cb_start": cb_start,
+            "cb_end": cb_end,
             "cb_data": cb_data,
             "download_id": download_id,
         },

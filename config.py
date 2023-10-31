@@ -81,9 +81,9 @@ def user_end_download(filename: Path, success: bool, data: str):
             f.write(f"{data}\n")
 
 
-def user_start_downloading(show_name: str, ep: str):
+def user_start_downloading(data: str):
     if notification_file_location is not None:
         with open(
             path.join(notification_file_location, "new.txt"), "a", encoding="utf-8"
         ) as f:
-            f.write(f"{show_name} - {ep}\n")
+            f.write(f"{data}\n")

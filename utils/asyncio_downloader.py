@@ -172,10 +172,10 @@ class DownloadTask:
 
         self.size = 0
         self.received = 0
-        self.error: Exception | None = None
         self.start_time = 0
         self.last_status_update = 0
         self.estimate: Prediction | None = None
+        self.estimate_thread: Thread | None = None
 
         self.segments = segments
         self.completed = []
@@ -186,11 +186,14 @@ class DownloadTask:
 
     async def setup(self, tries: int):
         self.received = 0
-        self.error = None
+
+        if self.start_time == 0:
+            self.start_time = time.time()
 
         size, self.supports_range, self.content = await self.src(tries)
         if size is None:
             return False
+
         self.size = size
         self.printr.set(self.download_id + "_max", self.size)
         self.printr.set(self.download_id + "_perc", 0)
@@ -225,37 +228,20 @@ class DownloadTask:
 
         if self.size > 0:
             self.estimate = Prediction(self.printr, self.download_id, self.size)
+            self.estimate_thread = Thread(target=self.estimate.run)
+            self.estimate_thread.start()
+
         return True
 
-    async def run(self, full_tries: int, inner_tries: int) -> bool:
-        self.start_time = time.time()
-        for try_ in tries_iterator(full_tries):
-            t = None
-            self.printr.set(self.download_id + "_try", try_)
-            try:
-                await self.setup(inner_tries)
-                if self.estimate:
-                    t = Thread(target=self.estimate.run)
-                    t.start()
-                if all(
-                    await asyncio.gather(
-                        *[self.multidown(inner_tries, i) for i in range(self.segments)]
-                    )
-                ):
-                    return True
-            except Exception as e:
-                self.error = e
-                break
-            finally:
-                if t is not None and self.estimate is not None:
-                    self.estimate.stop()
-                    t.join()
-                self.update_status(True)
-                if self.mm is not None:
-                    self.mm.close()
-                if self.file is not None:
-                    self.file.close()
-        return False
+    def stop(self):
+        if self.estimate is not None and self.estimate_thread is not None:
+            self.estimate.stop()
+            self.estimate_thread.join()
+        self.update_status(True)
+        if self.mm is not None:
+            self.mm.close()
+        if self.file is not None:
+            self.file.close()
 
     async def multidown(self, tries: int, index: int) -> bool:
         assert self.content is not None
@@ -266,42 +252,33 @@ class DownloadTask:
         end = self.ranges[index + 1]
 
         for _ in tries_iterator(tries):
-            if self.error:
-                return False
             if not self.supports_range:
                 count = 0
-            try:
-                i = start + count
-                async for chunk in self.content(start + count, end):
-                    if self.error:
-                        return False
-                    if chunk is None:
-                        await asyncio.sleep(1)
-                        break
-                    if chunk:
-                        if self.estimate:
-                            self.estimate.add(len(chunk))
-                        if self.mm is None:
-                            self.file.write(chunk)
-                        else:
-                            self.mm[i : i + len(chunk)] = chunk
-                        count += len(chunk)
-                        self.received += len(chunk)
-                        i += len(chunk)
 
-                        self.update_status()
-
-                if count == (end - start):
+            i = start + count
+            async for chunk in self.content(start + count, end):
+                if chunk is None:
                     break
-            except Exception as e:
-                self.error = e
-                return False
 
-        if count != (end - start):
-            return False
+                if self.estimate:
+                    self.estimate.add(len(chunk))
 
-        self.completed[index] = True
-        return True
+                if self.mm is None:
+                    self.file.write(chunk)
+                else:
+                    self.mm[i : i + len(chunk)] = chunk
+
+                count += len(chunk)
+                self.received += len(chunk)
+                i += len(chunk)
+
+                self.update_status()
+
+            if count == (end - start):
+                self.completed[index] = True
+                return True
+
+        return False
 
     def update_status(self, force: bool = False):
         current = time.time()
