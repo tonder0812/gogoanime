@@ -1,4 +1,3 @@
-import asyncio
 import itertools
 import math
 import time

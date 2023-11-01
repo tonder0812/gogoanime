@@ -32,7 +32,8 @@ async def run_download(
                 break
 
             if first:
-                cb(cb_data)
+                if cb is not None:
+                    cb(cb_data)
                 first = False
 
             async with asyncio.TaskGroup() as tg:
