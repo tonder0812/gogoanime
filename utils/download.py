@@ -1,3 +1,8 @@
+if __name__ == "__main__":
+    import sys
+
+    sys.path.insert(0, "..")
+
 import asyncio
 import threading
 import time
@@ -5,7 +10,6 @@ import traceback
 from inspect import getfullargspec
 from pathlib import Path
 from typing import Callable, TypeVar
-
 from printer import AbstractPrinter, FakePrinter
 from utils.asyncio_downloader import DownloadTask, SrcGeneratorType, tries_iterator
 from utils.debugging import debug_log
@@ -200,3 +204,28 @@ annotations_thread.pop("return", None)
 assert (
     annotations_normal == annotations_thread
 ), "download_file and download_file_threaded must have the same arguments"
+
+
+if __name__ == "__main__":
+    from utils.asyncio_downloader import httpx_ranged_builder
+    from printer import Printer
+
+    if len(sys.argv) < 3:
+        print(f"Usage: {sys.argv[0]} <url> <filename> [<segments>]")
+        exit(1)
+
+    segments = 10
+    if len(sys.argv) > 3:
+        segments = int(sys.argv[3])
+    p = Printer()
+    try:
+        path = Path(sys.argv[2])
+        download_file(
+            src=httpx_ranged_builder(sys.argv[1]),
+            folder=path.parent,
+            filename=path.name,
+            segments=segments,
+            printr=p,
+        )
+    finally:
+        p.stop()
