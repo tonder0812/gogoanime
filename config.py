@@ -65,7 +65,7 @@ if not isinstance(segments, int) or (segments <= 0):
     print(f"Invalid config: segments, must be a positive integer")
     exit(1)
 
-gogoanime_domain = options.get("gogoanime_domain", "gogoanime3.net")
+gogoanime_domain = options.get("gogoanime_domain", "gogoanime3.co")
 if not isinstance(gogoanime_domain, str):
     print("Invalid config: gogoanime_domain, must be a string")
     exit(1)
