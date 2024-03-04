@@ -1,2 +1,2 @@
-browser-cookie3==0.16.5
+browser-cookie3==0.19.1
 httpx==0.25.0

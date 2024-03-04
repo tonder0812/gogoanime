@@ -34,7 +34,7 @@ def get_episodes_download_links(
 def get_episode_links(client: httpx.Client, anime_id: str) -> dict[str, str] | None:
     try:
         r = client.get(
-            f"https://ajax.gogo-load.com/ajax/load-list-episode?id={anime_id}&ep_start=0&ep_end=100000"
+            f"https://ajax.gogocdn.net/ajax/load-list-episode?id={anime_id}&ep_start=0&ep_end=100000"
         )
         with EpListParser(r.content.decode()) as p:
             r.raise_for_status()
