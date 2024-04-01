@@ -65,7 +65,7 @@ class Parser(HTMLParser):
         self._HTMLParser__starttag_text = rawdata[i:endpos]
 
         # Now parse the data between i+1 and j into a tag and attrs
-        attrs = []
+        attrs: list[tuple[str, str | None]] = []
         match = tagfind_tolerant.match(rawdata, i + 1)
         assert match, "unexpected call to parse_starttag()"
         k = match.end()
