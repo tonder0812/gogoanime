@@ -19,7 +19,7 @@ valid_browsers = (
     "safari",
 )
 
-with open(config_json_location, "r") as f:
+with open(config_json_location, "r", encoding="utf-8") as f:
     options = json.load(f)
 
 download_path = Path(options.get("download_path", "./Downloads"))

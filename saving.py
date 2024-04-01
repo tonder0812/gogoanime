@@ -71,7 +71,7 @@ class Processing(ProcessingType):
 def parse_watching() -> tuple[dict[str, list[str]], dict[str, str]]:
     watching: dict[str, list[str]] = {}
     names: dict[str, str] = {}
-    with open(watching_location, "r") as f:
+    with open(watching_location, "r", encoding="utf-8") as f:
         s = f.read()
         for line in s.split("\n"):
             watch, *name = line.split("|")
@@ -91,7 +91,7 @@ def parse_watching() -> tuple[dict[str, list[str]], dict[str, str]]:
 
 def parse_new(watching: dict[str, list[str]], names: dict[str, str]) -> bool:
     changed = False
-    with open(new_location, "r") as f:
+    with open(new_location, "r", encoding="utf-8") as f:
         s = f.read()
         for line in s.split("\n"):
             id_, *name = line.split("|")
@@ -112,7 +112,7 @@ def parse_new(watching: dict[str, list[str]], names: dict[str, str]) -> bool:
 
 
 def save_watching(watching: dict[str, list[str]], names: dict[str, str]):
-    with open(watching_location, "w") as f:
+    with open(watching_location, "w", encoding="utf-8") as f:
         for anime in watching:
             f.write(anime + " " + ",".join(sorted(watching[anime], key=episode_order)))
             if anime in names:

@@ -77,12 +77,12 @@ def check(processing: Processing, p: AbstractPrinter, client: httpx.Client):
 
 
 def raise_for_quit(p: AbstractPrinter):
-    with open(quit_location, "r") as f:
+    with open(quit_location, "r", encoding="utf-8") as f:
         stop = f.read()
     if len(stop) > 0:
         os.system("title quiting")
         p.print("break")
-        with open(quit_location, "w") as f:
+        with open(quit_location, "w", encoding="utf-8") as f:
             pass
         raise Exception()
 
