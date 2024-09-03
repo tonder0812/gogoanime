@@ -1,5 +1,7 @@
 @echo off
 pushd "%~dp0"
+python check_python.py
+if %errorlevel% neq 0 exit /b %errorlevel%
 pip install -r requirements.txt
 mkdir config
 pushd config
