@@ -4,7 +4,7 @@ A python application to auto download anime from the https://gogoanime3.co websi
 
 It's necessary to have a logged in gogoanime account
 
-Needs python 3.11 or later
+Needs python 3.12 or later
 
 ## Instalation
 
