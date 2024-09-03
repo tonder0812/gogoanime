@@ -4,6 +4,7 @@ from typing import Self, override
 from printer.abstract_printer import AbstractPrinter
 
 from printer.scroller import Scroller
+from utils.debugging import debug_log
 
 
 from .console.utils import calc_rows, remove_control_chars
@@ -70,12 +71,17 @@ class Printer(AbstractPrinter):
 
     def render(self) -> None:
         while True:
-            if not self.waiting:
-                self.__render()
+            try:
+                if not self.waiting:
+                    self.__render()
 
-            if self.stopped:
-                return
-            time.sleep(self.delay)
+                if self.stopped:
+                    return
+                time.sleep(self.delay)
+            except Exception as e:
+                debug_log("====== printer error ======")
+                debug_log(e)
+                debug_log("===========================")
 
     def __render(self, should_set_cursor: bool = False) -> None:
         with self._lock(-1):

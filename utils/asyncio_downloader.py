@@ -203,6 +203,7 @@ class DownloadTask:
         self.filename.touch()
         if self.size > 0:
             self.file = self.filename.open(mode="r+b")
+            self.file.truncate(self.size)
             self.mm = mmap(self.file.fileno(), self.size)
         else:
             self.file = self.filename.open(mode="wb")
