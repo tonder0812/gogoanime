@@ -25,4 +25,8 @@ class VideoLinkParser(Parser):
             resolution = int(dim[0]) * int(dim[1])
             if resolution > self.best_resolution and int(dim[1]) >= 720:
                 self.download_link = self.curent_tag.attrs.get("href")
+                if self.download_link is not None:
+                    self.download_link = self.download_link.replace(
+                        "gredirect.info", "ggredi.info"
+                    )
                 self.best_resolution = resolution
