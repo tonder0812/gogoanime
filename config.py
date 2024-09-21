@@ -2,6 +2,8 @@ import json
 from os import path
 from pathlib import Path
 
+from utils.asyncio_downloader import DownloadTask
+
 config_location = "./config"
 new_location = path.join(config_location, "new.txt")
 quit_location = path.join(config_location, "quit.txt")
@@ -69,6 +71,13 @@ gogoanime_domain = options.get("gogoanime_domain", "gogoanime3.co")
 if not isinstance(gogoanime_domain, str):
     print("Invalid config: gogoanime_domain, must be a string")
     exit(1)
+
+concurrent_downloads = options.get("concurrent_downloads", 6)
+if not isinstance(concurrent_downloads, int) or (concurrent_downloads <= 0):
+    print(f"Invalid config: concurrent_downloads, must be a positive integer")
+    exit(1)
+
+DownloadTask.set_max_concurrent_downloads(concurrent_downloads)
 
 
 def user_end_download(filename: Path, success: bool, data: str):

@@ -1,5 +1,6 @@
 import itertools
 import math
+import threading
 import time
 from mmap import mmap
 from pathlib import Path
@@ -152,6 +153,12 @@ def calculate_ranges(size: int, segments: int):
 
 # Based on https://codereview.stackexchange.com/questions/265814/python-multi-connection-downloader
 class DownloadTask:
+    sem = threading.Semaphore()
+
+    @classmethod
+    def set_max_concurrent_downloads(cls, concurrent_downloads: int):
+        cls.sem = threading.Semaphore(concurrent_downloads)
+
     def __init__(
         self,
         *,
@@ -182,6 +189,7 @@ class DownloadTask:
         self.ranges: list[int] = []
 
         self.content: ContentGeneratorType | None = None
+        self.adquired_semaphore = False
 
     async def setup(self, tries: int):
         self.received = 0
@@ -201,6 +209,9 @@ class DownloadTask:
             self.segments = 1
 
         self.filename.touch()
+
+        self.adquired_semaphore = True
+        self.sem.acquire()
         if self.size > 0:
             self.file = self.filename.open(mode="r+b")
             self.file.truncate(self.size)
@@ -242,6 +253,8 @@ class DownloadTask:
             self.mm.close()
         if self.file is not None:
             self.file.close()
+        if self.adquired_semaphore:
+            self.sem.release()
 
     async def multidown(self, tries: int, index: int) -> bool:
         assert self.content is not None
