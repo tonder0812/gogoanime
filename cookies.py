@@ -1,10 +1,20 @@
 from http.cookiejar import CookieJar
+from typing import Protocol
 
 import browser_cookie3
 
 from config import browser, cookies_location, gogoanime_domain
 
-loaders = {
+
+class CookieLoader(Protocol):
+    @staticmethod
+    def __call__(
+        cookie_file: str | None = ...,
+        domain_name: str | None = ...,
+    ) -> CookieJar: ...
+
+
+loaders: dict[str, CookieLoader] = {
     "chrome": browser_cookie3.chrome,
     "chromium": browser_cookie3.chromium,
     "opera": browser_cookie3.opera,
