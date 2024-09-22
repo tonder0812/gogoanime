@@ -176,9 +176,11 @@ def download_anime(
     p.print(f"{len(eps)} ep(s):")
     for ep in eps:
         p.add_desc("  episode " + ep)
-        if links_to_download.get(ep) is not None:
-            p.add_desc(" V")
+        link = links_to_download.get(ep)
+        if link is not None:
+            p.add_desc(f" V ({link[1]})")
         p.print("")
+    p.print("")
 
     anime_folder = base_path / normalize_filename(anime_name, False)
 
@@ -195,7 +197,7 @@ def download_anime(
             anime_name=anime_name,
             anime_id=anime_id,
             anime_folder=anime_folder,
-            download_url=download_url,
+            download_url=download_url[0],
             ep=ep,
             epN=epN,
             eps=eps,

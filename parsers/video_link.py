@@ -8,6 +8,7 @@ class VideoLinkParser(Parser):
     def __init__(self, contents: str):
         super().__init__(contents)
         self.download_link = None
+        self.resolution = None
         self.best_resolution = 0
 
     def handle_data(self, data: str):
@@ -23,10 +24,11 @@ class VideoLinkParser(Parser):
                 return
 
             resolution = int(dim[0]) * int(dim[1])
-            if resolution > self.best_resolution and int(dim[1]) >= 720:
+            if resolution > self.best_resolution:
                 self.download_link = self.curent_tag.attrs.get("href")
                 if self.download_link is not None:
                     self.download_link = self.download_link.replace(
                         "gredirect.info", "ggredi.info"
                     )
                 self.best_resolution = resolution
+                self.resolution = data

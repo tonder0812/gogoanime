@@ -6,12 +6,15 @@ from parsers import EpListParser, VideoLinkParser
 
 def get_episode_download_link(
     client: httpx.Client, links: dict[str, str], episode: str
-) -> str | None:
+) -> tuple[str, str] | None:
     try:
         r = client.get(f"https://{gogoanime_domain}{links[episode]}")
         with VideoLinkParser(r.content.decode()) as p:
             r.raise_for_status()
-            return p.download_link
+            if p.download_link is None:
+                return None
+            assert p.resolution is not None
+            return p.download_link, p.resolution
     except httpx.TimeoutException:
         return None
     except httpx.NetworkError:
@@ -22,8 +25,8 @@ def get_episode_download_link(
 
 def get_episodes_download_links(
     client: httpx.Client, links: dict[str, str]
-) -> dict[str, str]:
-    res: dict[str, str] = {}
+) -> dict[str, tuple[str, str]]:
+    res: dict[str, tuple[str, str]] = {}
     for ep in links:
         link = get_episode_download_link(client, links, ep)
         if link is not None:
@@ -52,7 +55,7 @@ def get_episodes_to_download(
     anime_id: str,
     blacklist: list[str] | None,
     whitelist: list[str] | None,
-) -> tuple[dict[str, str], dict[str, str]] | tuple[None, None]:
+) -> tuple[dict[str, str], dict[str, tuple[str, str]]] | tuple[None, None]:
     links = get_episode_links(client, anime_id)
     if links is None:
         return None, None
