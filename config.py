@@ -64,6 +64,9 @@ if cookies_location is not None and not isinstance(cookies_location, str):
     print(f"Invalid config: cookies_location, must be a string or null")
     exit(1)
 
+email: str | None = options.get("email")
+password: str | None = options.get("password")
+
 max_full_tries = options.get("max_full_tries", 50)
 if not isinstance(max_full_tries, int) or (
     max_full_tries != -1 and max_full_tries <= 0

@@ -1,9 +1,13 @@
 from http.cookiejar import CookieJar
+import re
+import urllib
 from typing import Protocol
+import urllib.parse
 
 import browser_cookie3
+import httpx
 
-from config import browser, cookies_location, gogoanime_domain
+from config import browser, cookies_location, gogoanime_domain, email, password
 
 
 class CookieLoader(Protocol):
@@ -27,6 +31,23 @@ loaders: dict[str, CookieLoader] = {
 
 
 def load_cookies() -> CookieJar:
+    if email is not None and password is not None:
+        s = httpx.Client()
+        r = s.get(f"https://{gogoanime_domain}/login.html")
+        content = r.content.decode()
+        csrf = re.findall(r"_csrf'\s+value='(\w+)'", content)[0]
+        print(csrf, s.cookies)
+        r = s.post(
+            f"https://{gogoanime_domain}/login.html",
+            content=urllib.parse.urlencode(
+                {"_csrf": csrf, "email": email, "password": password}
+            ),
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            follow_redirects=False,
+        )
+        return s.cookies.jar
     if browser is None:
         return CookieJar()
     return loaders[browser](cookie_file=cookies_location, domain_name=gogoanime_domain)
