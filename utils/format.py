@@ -5,22 +5,27 @@ def digits(x: int):
     return len(str(x))
 
 
-def episode_filename_format(total_eps: int):
-    return "{:0" + str(max(digits(total_eps), 2)) + "d}({}).mp4"
+def generate_anime_logo_filename(
+    logo_format: str, anime_name: str, anime_id: str
+) -> str:
+    return logo_format.format(title=anime_name, id=anime_id) + ".png"
 
 
-def episode_desc_format(total_eps: int, max_episode_length: int):
-    return f"{{:0{str(max(digits(total_eps), 2))}d}}({{:<{str(max_episode_length)}}})"
+def generate_anime_dirname(folder_format: str, anime_name: str, anime_id: str) -> str:
+    return folder_format.format(title=anime_name, id=anime_id)
 
 
-def generate_filenames(eps: list[str], episode_number: int, ep: str) -> tuple[str, str]:
-    max_episode_length = max(map(len, eps))
-    return (
-        episode_filename_format(len(eps)).format(episode_number, "episode-" + ep),
-        episode_desc_format(len(eps), max_episode_length).format(
-            episode_number, "episode-" + ep
-        ),
-    )
+def generate_episode_filename_and_description(
+    episode_format: str,
+    eps: list[str],
+    episode_number: int,
+    ep: str,
+    anime_name: str,
+    anime_id: str,
+) -> tuple[str, str]:
+    index = str(episode_number).rjust(max(digits(len(eps)), 2), "0")
+    desc = episode_format.format(index=index, name=ep, title=anime_name, id=anime_id)
+    return (desc + ".mp4", desc)
 
 
 def format_time(time: float) -> str:

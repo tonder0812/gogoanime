@@ -29,6 +29,22 @@ if not download_path.exists() or not download_path.is_dir():
     print("Invalid config: download_path, must be a directory")
     exit(1)
 
+episode_format = options.get("episode_format", "{index}(episode-{name})")
+if not isinstance(episode_format, str):
+    print("Invalid config: episode_format, must be a string")
+    exit(1)
+
+folder_format = options.get("folder_format", "{title}")
+if not isinstance(folder_format, str):
+    print("Invalid config: folder_format, must be a string")
+    exit(1)
+
+logo_format = options.get("logo_format", "logo")
+if not isinstance(logo_format, str):
+    print("Invalid config: logo_format, must be a string")
+    exit(1)
+
+
 notification_file_location = options.get("notification_file_location")
 if notification_file_location is not None and not isinstance(
     notification_file_location, str

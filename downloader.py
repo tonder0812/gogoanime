@@ -13,13 +13,21 @@ from config import (
     segments,
     user_end_download,
     user_start_downloading,
+    logo_format,
+    episode_format,
+    folder_format,
 )
 from episode import episode_order, get_episodes_to_download
 from printer import AbstractPrinter, FakePrinter
 from saving import Processing
 from utils.asyncio_downloader import SrcGeneratorType, SrcType, httpx_ranged_builder
 from utils.download import download_file_threaded
-from utils.format import generate_filenames, normalize_filename
+from utils.format import (
+    generate_anime_dirname,
+    generate_anime_logo_filename,
+    generate_episode_filename_and_description,
+    normalize_filename,
+)
 
 
 def anime_logo_builder(
@@ -55,14 +63,16 @@ def dowload_anime_logo(
     client: httpx.Client,
     infos: dict[str, AnimeInfo],
     anime_id: str,
+    anime_name: str,
     show_folder: Path,
     threads: list[threading.Thread],
 ) -> None:
-    if not os.path.isfile(os.path.join(show_folder, "logo.png")):
+    filename = generate_anime_logo_filename(logo_format, anime_id, anime_name)
+    if not (show_folder / filename).exists():
         t = download_file_threaded(
             src=anime_logo_builder(anime_id, infos, client),
             folder=show_folder,
-            filename="logo.png",
+            filename=filename,
             printr=p,
             size_digits=2,
             max_full_tries=-1,
@@ -111,7 +121,9 @@ def download_episode(
     if p is None:
         p = FakePrinter()
 
-    filename, filename_desc = generate_filenames(eps, epN, ep)
+    filename, filename_desc = generate_episode_filename_and_description(
+        episode_format, eps, epN, ep, anime_name, anime_id
+    )
 
     if processing is not None:
         processing.start(anime_id, ep)
@@ -182,11 +194,13 @@ def download_anime(
         p.print("")
     p.print("")
 
-    anime_folder = base_path / normalize_filename(anime_name, False)
+    anime_folder = base_path / normalize_filename(
+        generate_anime_dirname(folder_format, anime_name, anime_id), False
+    )
 
     os.makedirs(anime_folder, exist_ok=True)
 
-    dowload_anime_logo(p, client, infos, anime_id, anime_folder, threads)
+    dowload_anime_logo(p, client, infos, anime_id, anime_name, anime_folder, threads)
 
     for epN, ep in enumerate(eps, 1):
         download_url = links_to_download.get(ep)
