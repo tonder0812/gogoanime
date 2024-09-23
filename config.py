@@ -1,6 +1,7 @@
 import json
 from os import path
 from pathlib import Path
+from typing import Any
 
 from utils.asyncio_downloader import DownloadTask
 
@@ -22,7 +23,7 @@ valid_browsers = (
 )
 
 with open(config_json_location, "r", encoding="utf-8") as f:
-    options = json.load(f)
+    options: dict[str, Any] = json.load(f)
 
 download_path = Path(options.get("download_path", "./Downloads"))
 if not download_path.exists() or not download_path.is_dir():
@@ -59,13 +60,25 @@ if browser not in valid_browsers:
     exit(1)
 assert isinstance(browser, str)
 
+email = options.get("email")
+if email is not None and not isinstance(email, str):
+    print(f"Invalid config: email, must be a string or null")
+    exit(1)
+
+password = options.get("password")
+if password is not None and not isinstance(password, str):
+    print(f"Invalid config: password, must be a string or null")
+    exit(1)
+
 cookies_location = options.get("cookies_location")
+if cookies_location is None and (email is None or password is None):
+    print(
+        f"Invalid config: either email and password or cookies_location must be provided"
+    )
+
 if cookies_location is not None and not isinstance(cookies_location, str):
     print(f"Invalid config: cookies_location, must be a string or null")
     exit(1)
-
-email: str | None = options.get("email")
-password: str | None = options.get("password")
 
 max_full_tries = options.get("max_full_tries", 50)
 if not isinstance(max_full_tries, int) or (
