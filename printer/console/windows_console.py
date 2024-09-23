@@ -187,6 +187,9 @@ if os.name == "nt":
     def get_size() -> tuple[int, int]:
         return terminal_size
 
+    def set_title(title: str):
+        execute_ansii_escape_sequence("]2;" + title + "\x07")
+
     def set_text(text: str, start: int = 0, should_set_cursor: bool = False):
         rows, cols = get_size()
         last_cursor = 1, 1

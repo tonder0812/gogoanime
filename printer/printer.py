@@ -1,5 +1,6 @@
 import time
 from threading import Thread
+import traceback
 from typing import Self, override
 from printer.abstract_printer import AbstractPrinter
 
@@ -81,6 +82,7 @@ class Printer(AbstractPrinter):
             except Exception as e:
                 debug_log("====== printer error ======")
                 debug_log(e)
+                debug_log(traceback.format_exc())
                 debug_log("===========================")
 
     def __render(self, should_set_cursor: bool = False) -> None:

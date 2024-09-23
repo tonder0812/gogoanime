@@ -61,8 +61,8 @@ if os.name != "nt":
             if c[0] != 0x1B:
                 return Key(
                     pressed=True,
-                    char=c.decode(),
-                    code=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
+                    code=c.decode(errors="backslashreplace"),
                     repeat_count=1,
                     capslock=False,
                     enhanced=False,
@@ -78,7 +78,7 @@ if os.name != "nt":
             if len(c) == 1:
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="^[",
                     repeat_count=1,
                     capslock=False,
@@ -208,7 +208,7 @@ if os.name != "nt":
             if c == b"\x1b[A":
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_UP",
                     repeat_count=1,
                     capslock=False,
@@ -224,7 +224,7 @@ if os.name != "nt":
             if c == b"\x1b[B":
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_DOWN",
                     repeat_count=1,
                     capslock=False,
@@ -240,7 +240,7 @@ if os.name != "nt":
             if c == b"\x1b[C":
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_RIGHT",
                     repeat_count=1,
                     capslock=False,
@@ -256,7 +256,7 @@ if os.name != "nt":
             if c == b"\x1b[D":
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_LEFT",
                     repeat_count=1,
                     capslock=False,
@@ -279,7 +279,7 @@ if os.name != "nt":
             ):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(1)",
                     repeat_count=1,
                     capslock=False,
@@ -302,7 +302,7 @@ if os.name != "nt":
             ):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(2)",
                     repeat_count=1,
                     capslock=False,
@@ -325,7 +325,7 @@ if os.name != "nt":
             ):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(3)",
                     repeat_count=1,
                     capslock=False,
@@ -348,7 +348,7 @@ if os.name != "nt":
             ):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(4)",
                     repeat_count=1,
                     capslock=False,
@@ -364,7 +364,7 @@ if os.name != "nt":
             if c in (b"\x1b[15~", b"\x1b[15~", b"\x1b[15~", b"\x1b[15~", b"\x1b[15~"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(5)",
                     repeat_count=1,
                     capslock=False,
@@ -387,7 +387,7 @@ if os.name != "nt":
             ):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(6)",
                     repeat_count=1,
                     capslock=False,
@@ -410,7 +410,7 @@ if os.name != "nt":
             ):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(7)",
                     repeat_count=1,
                     capslock=False,
@@ -433,7 +433,7 @@ if os.name != "nt":
             ):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(8)",
                     repeat_count=1,
                     capslock=False,
@@ -456,7 +456,7 @@ if os.name != "nt":
             ):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(9)",
                     repeat_count=1,
                     capslock=False,
@@ -479,7 +479,7 @@ if os.name != "nt":
             ):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(10)",
                     repeat_count=1,
                     capslock=False,
@@ -502,7 +502,7 @@ if os.name != "nt":
             ):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(11)",
                     repeat_count=1,
                     capslock=False,
@@ -525,7 +525,7 @@ if os.name != "nt":
             ):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(12)",
                     repeat_count=1,
                     capslock=False,
@@ -541,7 +541,7 @@ if os.name != "nt":
             if c in (b"\x1b[25~", b"\x1b[11;2~", b"\x1bO2P", b"\x1b[25~", b"\x1b[25~"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(13)",
                     repeat_count=1,
                     capslock=False,
@@ -557,7 +557,7 @@ if os.name != "nt":
             if c in (b"\x1b[26~", b"\x1b[12;2~", b"\x1bO2Q", b"\x1b[26~", b"\x1b[26~"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(14)",
                     repeat_count=1,
                     capslock=False,
@@ -573,7 +573,7 @@ if os.name != "nt":
             if c in (b"\x1b[28~", b"\x1b[13;2~", b"\x1bO2R", b"\x1b[28~", b"\x1b[28~"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(15)",
                     repeat_count=1,
                     capslock=False,
@@ -589,7 +589,7 @@ if os.name != "nt":
             if c in (b"\x1b[29~", b"\x1b[14;2~", b"\x1bO2S", b"\x1b[29~", b"\x1b[29~"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(16)",
                     repeat_count=1,
                     capslock=False,
@@ -611,7 +611,7 @@ if os.name != "nt":
             ):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(17)",
                     repeat_count=1,
                     capslock=False,
@@ -633,7 +633,7 @@ if os.name != "nt":
             ):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(18)",
                     repeat_count=1,
                     capslock=False,
@@ -655,7 +655,7 @@ if os.name != "nt":
             ):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(19)",
                     repeat_count=1,
                     capslock=False,
@@ -677,7 +677,7 @@ if os.name != "nt":
             ):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(20)",
                     repeat_count=1,
                     capslock=False,
@@ -693,7 +693,7 @@ if os.name != "nt":
             if c in (b"\x1b[20;2~", b"\x1b[20;2~", b"\x1b[23$"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(21)",
                     repeat_count=1,
                     capslock=False,
@@ -709,7 +709,7 @@ if os.name != "nt":
             if c in (b"\x1b[21;2~", b"\x1b[21;2~", b"\x1b[24$"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(22)",
                     repeat_count=1,
                     capslock=False,
@@ -725,7 +725,7 @@ if os.name != "nt":
             if c in (b"\x1b[23;2~", b"\x1b[23;2~", b"\x1b[11^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(23)",
                     repeat_count=1,
                     capslock=False,
@@ -741,7 +741,7 @@ if os.name != "nt":
             if c in (b"\x1b[24;2~", b"\x1b[24;2~", b"\x1b[12^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(24)",
                     repeat_count=1,
                     capslock=False,
@@ -757,7 +757,7 @@ if os.name != "nt":
             if c in (b"\x1b[11;5~", b"\x1bO5P", b"\x1b[13^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(25)",
                     repeat_count=1,
                     capslock=False,
@@ -773,7 +773,7 @@ if os.name != "nt":
             if c in (b"\x1b[12;5~", b"\x1bO5Q", b"\x1b[14^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(26)",
                     repeat_count=1,
                     capslock=False,
@@ -789,7 +789,7 @@ if os.name != "nt":
             if c in (b"\x1b[13;5~", b"\x1bO5R", b"\x1b[15^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(27)",
                     repeat_count=1,
                     capslock=False,
@@ -805,7 +805,7 @@ if os.name != "nt":
             if c in (b"\x1b[14;5~", b"\x1bO5S", b"\x1b[17^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(28)",
                     repeat_count=1,
                     capslock=False,
@@ -821,7 +821,7 @@ if os.name != "nt":
             if c in (b"\x1b[15;5~", b"\x1b[15;5~", b"\x1b[18^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(29)",
                     repeat_count=1,
                     capslock=False,
@@ -837,7 +837,7 @@ if os.name != "nt":
             if c in (b"\x1b[17;5~", b"\x1b[17;5~", b"\x1b[19^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(30)",
                     repeat_count=1,
                     capslock=False,
@@ -853,7 +853,7 @@ if os.name != "nt":
             if c in (b"\x1b[18;5~", b"\x1b[18;5~", b"\x1b[20^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(31)",
                     repeat_count=1,
                     capslock=False,
@@ -869,7 +869,7 @@ if os.name != "nt":
             if c in (b"\x1b[19;5~", b"\x1b[19;5~", b"\x1b[21^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(32)",
                     repeat_count=1,
                     capslock=False,
@@ -885,7 +885,7 @@ if os.name != "nt":
             if c in (b"\x1b[20;5~", b"\x1b[20;5~", b"\x1b[23^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(33)",
                     repeat_count=1,
                     capslock=False,
@@ -901,7 +901,7 @@ if os.name != "nt":
             if c in (b"\x1b[21;5~", b"\x1b[21;5~", b"\x1b[24^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(34)",
                     repeat_count=1,
                     capslock=False,
@@ -917,7 +917,7 @@ if os.name != "nt":
             if c in (b"\x1b[23;5~", b"\x1b[23;5~", b"\x1b[25^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(35)",
                     repeat_count=1,
                     capslock=False,
@@ -933,7 +933,7 @@ if os.name != "nt":
             if c in (b"\x1b[24;5~", b"\x1b[24;5~", b"\x1b[26^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(36)",
                     repeat_count=1,
                     capslock=False,
@@ -949,7 +949,7 @@ if os.name != "nt":
             if c in (b"\x1b[11;6~", b"\x1bO6P", b"\x1b[28^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(37)",
                     repeat_count=1,
                     capslock=False,
@@ -965,7 +965,7 @@ if os.name != "nt":
             if c in (b"\x1b[12;6~", b"\x1bO6Q", b"\x1b[29^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(38)",
                     repeat_count=1,
                     capslock=False,
@@ -981,7 +981,7 @@ if os.name != "nt":
             if c in (b"\x1b[13;6~", b"\x1bO6R", b"\x1b[31^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(39)",
                     repeat_count=1,
                     capslock=False,
@@ -997,7 +997,7 @@ if os.name != "nt":
             if c in (b"\x1b[14;6~", b"\x1bO6S", b"\x1b[32^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(40)",
                     repeat_count=1,
                     capslock=False,
@@ -1013,7 +1013,7 @@ if os.name != "nt":
             if c in (b"\x1b[15;6~", b"\x1b[15;6~", b"\x1b[33^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(41)",
                     repeat_count=1,
                     capslock=False,
@@ -1029,7 +1029,7 @@ if os.name != "nt":
             if c in (b"\x1b[17;6~", b"\x1b[17;6~", b"\x1b[34^"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(42)",
                     repeat_count=1,
                     capslock=False,
@@ -1045,7 +1045,7 @@ if os.name != "nt":
             if c in (b"\x1b[18;6~", b"\x1b[18;6~", b"\x1b[23@"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(43)",
                     repeat_count=1,
                     capslock=False,
@@ -1061,7 +1061,7 @@ if os.name != "nt":
             if c in (b"\x1b[19;6~", b"\x1b[19;6~", b"\x1b[24@"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(44)",
                     repeat_count=1,
                     capslock=False,
@@ -1077,7 +1077,7 @@ if os.name != "nt":
             if c in (b"\x1b[20;6~", b"\x1b[20; 6~"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(45)",
                     repeat_count=1,
                     capslock=False,
@@ -1093,7 +1093,7 @@ if os.name != "nt":
             if c in (b"\x1b[21;6~", b"\x1b[21; 6~"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(46)",
                     repeat_count=1,
                     capslock=False,
@@ -1109,7 +1109,7 @@ if os.name != "nt":
             if c in (b"\x1b[23;6~", b"\x1b[23; 6~"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(47)",
                     repeat_count=1,
                     capslock=False,
@@ -1125,7 +1125,7 @@ if os.name != "nt":
             if c in (b"\x1b[24;6~", b"\x1b[24; 6~"):
                 return Key(
                     pressed=True,
-                    char=c.decode(),
+                    char=c.decode(errors="backslashreplace"),
                     code="KEY_F(48)",
                     repeat_count=1,
                     capslock=False,
@@ -1141,7 +1141,7 @@ if os.name != "nt":
 
             return Key(
                 pressed=False,
-                char=c.decode(),
+                char=c.decode(errors="backslashreplace"),
                 code="UNKOWN",
                 repeat_count=0,
                 capslock=False,
@@ -1161,7 +1161,11 @@ if os.name != "nt":
         size = os.get_terminal_size()
         return size.lines, size.columns
 
+    def set_title(title: str):
+        execute_ansii_escape_sequence("]2;" + title + "\x07")
+
     def set_text(text: str, start: int = 0, should_set_cursor: bool = False):
+        global oldflags
         rows, cols = get_size()
         last_cursor = 1, 1
         move_cursor(1, 1)
@@ -1173,8 +1177,11 @@ if os.name != "nt":
             i += 1
         for line in range(i, rows - 1):
             msg += " " * cols
+        fileno = sys.stdin.fileno()
+        fcntl.fcntl(fileno, fcntl.F_SETFL, oldflags & ~os.O_NONBLOCK)
         print(msg, end="", flush=True)
         if should_set_cursor:
             move_cursor(*last_cursor)
         else:
             move_cursor(1, 1)
+        fcntl.fcntl(fileno, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)

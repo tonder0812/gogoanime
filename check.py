@@ -1,4 +1,3 @@
-import os
 import sys
 import threading
 import time
@@ -11,6 +10,7 @@ from config import download_path, quit_location
 from cookies import load_cookies
 from downloader import download_anime
 from printer import AbstractPrinter, Printer
+from printer.console import set_title
 from saving import Processing
 from saving import get_watching as _get_watching
 
@@ -53,7 +53,7 @@ def check(processing: Processing, p: AbstractPrinter, client: httpx.Client):
     watching = get_watching(p, names)
     for anime_id in watching:
         time.sleep(1)
-        os.system("title checking " + anime_id)
+        set_title("checking " + anime_id)
 
         update_info(client, anime_id)
 
@@ -80,7 +80,7 @@ def raise_for_quit(p: AbstractPrinter):
     with open(quit_location, "r", encoding="utf-8") as f:
         stop = f.read()
     if len(stop) > 0:
-        os.system("title quiting")
+        set_title("quiting")
         p.print("break")
         with open(quit_location, "w", encoding="utf-8") as f:
             pass
@@ -109,7 +109,7 @@ def main():
     try:
         while True:
             p.set("timer", CHECK_INTERVAL)
-            os.system("title checking")
+            set_title("checking")
             try:
                 check(p, client)
             except Exception as e:
@@ -123,7 +123,7 @@ def main():
 
                 raise_for_quit(p)
 
-                os.system(f"title checking in {CHECK_INTERVAL-i}s")
+                set_title(f"checking in {CHECK_INTERVAL-i}s")
                 p.set("timer", CHECK_INTERVAL - i)
                 time.sleep(1)
     except Exception as e:
