@@ -3,6 +3,7 @@ from os import path
 from pathlib import Path
 from typing import Any
 
+from utils import debugging
 from utils.asyncio_downloader import DownloadTask
 
 config_location = "./config"
@@ -109,6 +110,12 @@ if not isinstance(concurrent_downloads, int) or (concurrent_downloads <= 0):
     print(f"Invalid config: concurrent_downloads, must be a positive integer")
     exit(1)
 
+debug_mode = options.get("debug_mode", False)
+if not isinstance(debug_mode, bool):
+    print(f"Invalid config: debug_mode, must be true or false")
+
+if debug_mode:
+    debugging.set_log_level(1)
 DownloadTask.set_max_concurrent_downloads(concurrent_downloads)
 
 

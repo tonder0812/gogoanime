@@ -63,8 +63,8 @@ def download_file(
     segments: int = 10,
     printr: AbstractPrinter | None = None,
     size_digits: int = 9,
-    cb_start: (Callable[[T], None] | None) = None,
-    cb_end: (Callable[[Path, bool, T, str], None] | None) = None,
+    cb_start: Callable[[T], None] | None = None,
+    cb_end: Callable[[Path, bool, T, str], None] | None = None,
     cb_data: T = None,
     download_id: str | None = None,
 ) -> tuple[Path, bool]:
@@ -118,18 +118,20 @@ def download_file(
         success = asyncio.run(
             run_download(task, max_full_tries, max_inner_tries, cb_start, cb_data)
         )
-    except Exception as e:
+    except Exception:
         debug_log("========================================================")
-        debug_log(e)
+        debug_log(f"[{download_id}] unhandled download exception")
+        debug_log(f"")
         debug_log(traceback.format_exc())
     if remove_old:
         for _ in tries_iterator(max_full_tries):
             try:
                 local_filename.unlink(missing_ok=True)
                 break
-            except Exception as e:
+            except Exception:
                 debug_log("========================================================")
-                debug_log(e)
+                debug_log(f"Error deleting file: {local_filename}")
+                debug_log(f"")
                 debug_log(traceback.format_exc())
             time.sleep(0.1)
         else:
@@ -144,13 +146,17 @@ def download_file(
         printr.set(download_id + "_try", -1)
         printr.set(download_id + "_estimated", format_time(0))
         debug_log("========================================================")
-        debug_log(download_id)
-        debug_log(task.completed)
-        debug_log(task.filename)
-        debug_log(task.ranges)
-        debug_log(task.received)
-        debug_log(task.segments)
-        debug_log(task.size)
+        debug_log(f"[{download_id}] finished unsuccessfully")
+        debug_log(f"file: {task.filename}")
+        debug_log(
+            f"downloaded: {task.received}/{task.size} {f"(~{(task.received/task.size)*100:.2f}%)" if task.size>0 else ""} bytes"
+        )
+        debug_log(f"supports range: {task.supports_range}")
+        if task.supports_range:
+            debug_log(f"segments: {task.segments}")
+            debug_log(f"segment size: {task.segment_size}")
+            debug_log(f"segment stops: {task.ranges}")
+            debug_log(f"completed segments: {task.completed}")
     if cb_end:
         cb_end(local_filename, success, cb_data, download_id)
 
@@ -169,8 +175,8 @@ def download_file_threaded(
     max_inner_tries: int = 50,
     printr: AbstractPrinter | None = None,
     size_digits: int = 9,
-    cb_start: (Callable[[T], None] | None) = None,
-    cb_end: (Callable[[Path, bool, T, str], None] | None) = None,
+    cb_start: Callable[[T], None] | None = None,
+    cb_end: Callable[[Path, bool, T, str], None] | None = None,
     cb_data: T = None,
     download_id: str | None = None,
 ) -> threading.Thread:

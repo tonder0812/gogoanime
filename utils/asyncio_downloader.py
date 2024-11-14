@@ -5,7 +5,8 @@ import time
 from mmap import mmap
 from pathlib import Path
 from threading import Thread
-from typing import AsyncIterator, Awaitable, Callable, Iterable
+import traceback
+from typing import AsyncIterator, Awaitable, Callable, Iterable, Protocol
 
 import anyio
 import httpx
@@ -45,6 +46,8 @@ async def get_download_size(
             pass
         except httpx.ProtocolError:
             pass
+        except httpx.TooManyRedirects:
+            pass
 
 
 async def get_suports_range(client: httpx.AsyncClient, url: str, tries: int) -> bool:
@@ -66,6 +69,8 @@ async def get_suports_range(client: httpx.AsyncClient, url: str, tries: int) -> 
             pass
         except httpx.ProtocolError:
             pass
+        except httpx.TooManyRedirects:
+            pass
     return False
 
 
@@ -77,7 +82,14 @@ async def empty_stream(_: int, __: int) -> AsyncIterator[bytes | None]:
 ContentType = AsyncIterator[bytes | None]
 ContentGeneratorType = Callable[[int, int], ContentType]
 SrcType = tuple[int | None, bool, ContentGeneratorType]
-SrcGeneratorType = Callable[[int], Awaitable[SrcType]]
+
+
+# SrcGeneratorType = Callable[[int, int], Awaitable[SrcType]]
+class SrcGeneratorType(Protocol):
+
+    def __call__(
+        self, tries: int, force_unsegmented: bool = False, /
+    ) -> Awaitable[SrcType]: ...
 
 
 def httpx_ranged_builder(
@@ -93,25 +105,48 @@ def httpx_ranged_builder(
     if headers:
         client.headers = headers
 
-    async def src(tries: int) -> SrcType:
-        size = await get_download_size(client, url, tries)
+    async def src(tries: int, force_unsegmented: bool = False) -> SrcType:
+        size = None
+
+        try:
+            size = await get_download_size(client, url, tries)
+        except Exception:
+            debug_log("========================================================", 1)
+            debug_log(f"Error getting download size for: {url}", 1)
+            debug_log(f"", 1)
+            debug_log(traceback.format_exc(), 1)
         if size is None:
             return None, False, empty_stream
 
-        supports_range = await get_suports_range(client, url, tries)
-        supports_range = size > 0 and supports_range
+        supports_range = False
+        if not force_unsegmented and size > 5 * 1024 * 1024:
+            try:
+                supports_range = await get_suports_range(client, url, tries)
+            except Exception:
+                debug_log("========================================================", 1)
+                debug_log(f"Error checking if server supports range for: {url}", 1)
+                debug_log(f"", 1)
+                debug_log(traceback.format_exc(), 1)
 
         async def stream(start: int, end: int):
             try:
                 async with client.stream(
-                    "GET", url, headers={"range": f"bytes={start}-{end-1}"}, timeout=60
+                    "GET",
+                    url,
+                    headers=(
+                        {"range": f"bytes={start}-{end-1}"} if supports_range else {}
+                    ),
+                    timeout=60,
                 ) as r:
-                    if r.status_code != 206:
-                        raise InvalidHTTPRange()
-                    if not r.headers["Content-Range"].startswith(
-                        f"bytes {start}-{end-1}"
-                    ):
-                        raise InvalidHTTPRange()
+                    if supports_range:
+                        if r.status_code != 206:
+                            raise HTTPStatusCodeNot206(
+                                r.status_code, url, f"{start}-{end-1}", r.headers
+                            )
+                        if not r.headers["Content-Range"].startswith(
+                            f"bytes {start}-{end-1}"
+                        ):
+                            raise InvalidHTTPRange(url, f"{start}-{end-1}", r.headers)
                     async for chunk in r.aiter_bytes(1024):
                         if chunk:
                             yield chunk
@@ -129,12 +164,20 @@ def httpx_ranged_builder(
     return src
 
 
+class HTTPStatusCodeNot206(Exception):
+    def __init__(
+        self, status_code: int, url: str, range: str, headers: httpx.Headers
+    ) -> None:
+        super().__init__(
+            f"Invalid HTTP response to range request:\n  status code: {status_code}\n  url: {url}\n  range: {range}\n  response headers: {headers}"
+        )
+
+
 class InvalidHTTPRange(Exception):
-    pass
-
-
-class NoSizeError(Exception):
-    pass
+    def __init__(self, url: str, range: str, headers: httpx.Headers) -> None:
+        super().__init__(
+            f"Range missmatch between request and response:\n  url: {url}\n  requested range: {range}\n  response range: {headers["Content-Range"]}\n  response headers: {headers}"
+        )
 
 
 def calculate_ranges(size: int, segments: int):
@@ -197,7 +240,9 @@ class DownloadTask:
         if self.start_time == 0:
             self.start_time = time.time()
 
-        size, self.supports_range, self.content = await self.src(tries)
+        size, self.supports_range, self.content = await self.src(
+            tries, self.segments == 1
+        )
         if size is None:
             return False
 
@@ -205,7 +250,7 @@ class DownloadTask:
         self.printr.set(self.download_id + "_max", self.size)
         self.printr.set(self.download_id + "_perc", 0)
 
-        if self.size < 5 * 1024 * 1024 or not self.supports_range:
+        if not self.supports_range:
             self.segments = 1
 
         self.filename.touch()
@@ -219,21 +264,23 @@ class DownloadTask:
         else:
             self.file = self.filename.open(mode="wb")
 
-        segment_size = 0
+        self.segment_size = 0
         while self.segments > 1:
-            segment_size = self.size / self.segments
-            if segment_size > 1024:
+            self.segment_size = self.size / self.segments
+            if self.segment_size > 1024:
                 break
             self.segments -= 1
 
         self.ranges = calculate_ranges(self.size, self.segments)
 
         debug_log("========================================================")
-        debug_log(self.download_id)
-        debug_log(self.filename)
-        debug_log(f"segments {self.segments} size {segment_size}")
-        debug_log(self.ranges)
-        debug_log(self.supports_range)
+        debug_log(f"[{self.download_id}] info")
+        debug_log(f"file: {self.filename}")
+        debug_log(f"supports range: {self.supports_range}")
+        if self.supports_range:
+            debug_log(f"segments: {self.segments}")
+            debug_log(f"segment size: {self.segment_size}")
+            debug_log(f"segment stops: {self.ranges}")
 
         self.completed = [False for _ in range(self.segments)]
 
@@ -265,31 +312,40 @@ class DownloadTask:
         end = self.ranges[index + 1]
 
         for _ in tries_iterator(tries):
-            if not self.supports_range:
-                count = 0
+            try:
+                if not self.supports_range:
+                    count = 0
 
-            i = start + count
-            async for chunk in self.content(start + count, end):
-                if chunk is None:
-                    break
+                i = start + count
+                async for chunk in self.content(start + count, end):
+                    if chunk is None:
+                        break
 
-                if self.estimate:
-                    self.estimate.add(len(chunk))
+                    if self.estimate:
+                        self.estimate.add(len(chunk))
 
-                if self.mm is None:
-                    self.file.write(chunk)
-                else:
-                    self.mm[i : i + len(chunk)] = chunk
+                    if self.mm is None:
+                        self.file.write(chunk)
+                    else:
+                        self.mm[i : i + len(chunk)] = chunk
 
-                count += len(chunk)
-                self.received += len(chunk)
-                i += len(chunk)
+                    count += len(chunk)
+                    self.received += len(chunk)
+                    i += len(chunk)
 
-                self.update_status()
+                    self.update_status()
 
-            if count == (end - start):
-                self.completed[index] = True
-                return True
+                if count == (end - start):
+                    self.completed[index] = True
+                    return True
+            except Exception:
+                debug_log("========================================================", 1)
+                debug_log(
+                    f"[{self.download_id}] Error while downloading segment {index} ({start}-{end})",
+                    1,
+                )
+                debug_log(f"", 1)
+                debug_log(traceback.format_exc(), 1)
 
         return False
 

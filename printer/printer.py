@@ -79,9 +79,8 @@ class Printer(AbstractPrinter):
                 if self.stopped:
                     return
                 time.sleep(self.delay)
-            except Exception as e:
+            except Exception:
                 debug_log("====== printer error ======")
-                debug_log(e)
                 debug_log(traceback.format_exc())
                 debug_log("===========================")
 

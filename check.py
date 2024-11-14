@@ -112,9 +112,8 @@ def main():
             set_title("checking")
             try:
                 check(p, client)
-            except Exception as e:
+            except Exception:
                 p.print("Check failed:")
-                p.print(e)
                 p.print(traceback.format_exc())
             if "-c" not in sys.argv:
                 break
@@ -126,7 +125,7 @@ def main():
                 set_title(f"checking in {CHECK_INTERVAL-i}s")
                 p.set("timer", CHECK_INTERVAL - i)
                 time.sleep(1)
-    except Exception as e:
+    except Exception:
         pass
     finally:
         for t in threads:

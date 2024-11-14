@@ -35,7 +35,7 @@ def anime_logo_builder(
 ) -> SrcGeneratorType:
     last_link = [""]
 
-    async def src(tries: int) -> SrcType:
+    async def src(tries: int, force_unsegmented: bool = False) -> SrcType:
         if last_link[0] == "":
             info = infos[anime_id]
         else:
@@ -53,7 +53,7 @@ def anime_logo_builder(
         newClient.cookies = client.cookies
 
         builder = httpx_ranged_builder(info.logo_url, client=newClient)
-        return await builder(tries)
+        return await builder(tries, force_unsegmented)
 
     return src
 
