@@ -11,7 +11,13 @@ from inspect import getfullargspec
 from pathlib import Path
 from typing import Callable, TypeVar
 from printer import AbstractPrinter, FakePrinter
-from utils.asyncio_downloader import DownloadTask, SrcGeneratorType, tries_iterator
+from utils.asyncio_downloader import (
+    DownloadTask,
+    M3U8DownloadTask,
+    M3U8SrcGeneratorType,
+    SrcGeneratorType,
+    tries_iterator,
+)
 from utils.debugging import debug_log
 from utils.format import format_time
 
@@ -32,7 +38,7 @@ async def run_download(
     for try_ in tries_iterator(full_tries):
         task.printr.set(task.download_id + "_try", try_)
         try:
-            if not await task.setup(inner_tries):
+            if not (await task.setup(inner_tries)):
                 break
 
             if first:
@@ -203,6 +209,182 @@ def download_file_threaded(
     )
 
 
+async def run_download_M3U8(
+    task: M3U8DownloadTask,
+    full_tries: int,
+    inner_tries: int,
+    cb: Callable[[T], None] | None = None,
+    cb_data: T = None,
+) -> bool:
+    first = True
+    for try_ in tries_iterator(full_tries):
+        task.printr.set(task.download_id + "_try", try_)
+        try:
+            if not (await task.setup(inner_tries)):
+                debug_log(f"[{task.download_id}] setup failed")
+                break
+
+            if first:
+                if cb is not None:
+                    cb(cb_data)
+                first = False
+
+            async with asyncio.TaskGroup() as tg:
+                for i in range(task.segments):
+                    tg.create_task(task.multidown(inner_tries, i))
+
+            if all(task.completed):
+                return True
+        finally:
+            task.stop()
+    return False
+
+
+def download_file_M3U8(
+    *,
+    src: M3U8SrcGeneratorType,
+    folder: Path,
+    filename: str,
+    desc: str = "",
+    remove_old: bool = True,
+    max_full_tries: int = 50,
+    max_inner_tries: int = 50,
+    printr: AbstractPrinter | None = None,
+    size_digits: int = 9,
+    cb_start: Callable[[T], None] | None = None,
+    cb_end: Callable[[Path, bool, T, str], None] | None = None,
+    cb_data: T = None,
+    download_id: str | None = None,
+) -> tuple[Path, bool]:
+    global _download_N
+
+    if desc == "":
+        desc = filename
+
+    local_filename = folder / filename
+
+    success = False
+    repeating_download = True
+
+    if download_id is None:
+        with _download_N_lock:
+            _download_N += 1
+            download_id = "Download_N" + str(_download_N)
+        repeating_download = False
+
+    if printr is None:
+        printr = FakePrinter()
+
+    if remove_old:
+        for _ in tries_iterator(max_full_tries):
+            try:
+                local_filename.unlink(missing_ok=True)
+                break
+            except Exception:
+                debug_log("========================================================")
+                debug_log(f"Error deleting file: {local_filename}")
+                debug_log(f"")
+                debug_log(traceback.format_exc())
+            time.sleep(0.1)
+        else:
+            if cb_end:
+                cb_end(local_filename, False, cb_data, download_id)
+
+            return (local_filename, False)
+
+    printr.set(download_id + "_progress", 0)
+    printr.set(download_id + "_max", 0)
+    printr.set(download_id + "_perc", 0)
+    printr.set(download_id + "_try", 0)
+    printr.set(download_id + "_estimated", format_time(0))
+    printr.set(download_id + "_timer", format_time(0))
+    printr.set(download_id + "_updated", time.asctime())
+    if not repeating_download:
+        msg = "{" + download_id + "_progress:" + str(size_digits) + "d}|"
+        msg += "{" + download_id + "_max:" + str(size_digits) + "d}"
+        msg += "({" + download_id + "_perc:6.2f}%)"
+        msg += "[{" + download_id + "_try}] "
+        msg += "{" + download_id + "_timer} "
+        msg += "{" + download_id + "_estimated} "
+        msg += "Last changed at {" + download_id + "_updated}\n"
+        with printr.get_lock():
+            printr.print(f"{desc}:", end="")
+            printr.add_desc(msg)
+
+    task = M3U8DownloadTask(
+        src=src,
+        filename=local_filename,
+        printr=printr,
+        download_id=download_id,
+    )
+    try:
+        success = asyncio.run(
+            run_download_M3U8(task, max_full_tries, max_inner_tries, cb_start, cb_data)
+        )
+    except Exception:
+        debug_log("========================================================")
+        debug_log(f"[{download_id}] unhandled download exception")
+        debug_log(f"")
+        debug_log(traceback.format_exc())
+
+    if not success:
+        printr.set(download_id + "_progress", -1)
+        printr.set(download_id + "_max", -1)
+        printr.set(download_id + "_perc", -1)
+        printr.set(download_id + "_try", -1)
+        printr.set(download_id + "_estimated", format_time(0))
+        debug_log("========================================================")
+        debug_log(f"[{download_id}] finished unsuccessfully")
+        debug_log(f"file: {task.filename}")
+        debug_log(
+            f"downloaded: {task.received}/{task.size} {f"(~{(task.received/task.size)*100:.2f}%)" if task.size>0 else ""} bytes"
+        )
+        debug_log(f"segments: {task.segments}")
+        debug_log(f"completed segments: {task.completed}")
+    if cb_end:
+        cb_end(local_filename, success, cb_data, download_id)
+
+    return (local_filename, success)
+
+
+def download_file_threaded_M3U8(
+    *,
+    src: M3U8SrcGeneratorType,
+    folder: Path,
+    filename: str,
+    desc: str = "",
+    remove_old: bool = True,
+    max_full_tries: int = 50,
+    max_inner_tries: int = 50,
+    printr: AbstractPrinter | None = None,
+    size_digits: int = 9,
+    cb_start: Callable[[T], None] | None = None,
+    cb_end: Callable[[Path, bool, T, str], None] | None = None,
+    cb_data: T = None,
+    download_id: str | None = None,
+) -> threading.Thread:
+    # def download(**kwargs:Any):
+    #     asyncio.run(download_file(**kwargs))
+    return threading.Thread(
+        target=download_file_M3U8,
+        kwargs={
+            "src": src,
+            "folder": folder,
+            "filename": filename,
+            "desc": desc,
+            "remove_old": remove_old,
+            "max_full_tries": max_full_tries,
+            "max_inner_tries": max_inner_tries,
+            "printr": printr,
+            "size_digits": size_digits,
+            "cb_start": cb_start,
+            "cb_end": cb_end,
+            "cb_data": cb_data,
+            "download_id": download_id,
+        },
+    )
+
+
 annotations_normal = getfullargspec(download_file).annotations
 annotations_normal.pop("return", None)
 annotations_thread = getfullargspec(download_file_threaded).annotations
@@ -210,6 +392,14 @@ annotations_thread.pop("return", None)
 assert (
     annotations_normal == annotations_thread
 ), "download_file and download_file_threaded must have the same arguments"
+
+annotations_normal = getfullargspec(download_file_M3U8).annotations
+annotations_normal.pop("return", None)
+annotations_thread = getfullargspec(download_file_threaded_M3U8).annotations
+annotations_thread.pop("return", None)
+assert (
+    annotations_normal == annotations_thread
+), "download_file_M3U8 and download_file_threaded_M3U8 must have the same arguments"
 
 
 if __name__ == "__main__":

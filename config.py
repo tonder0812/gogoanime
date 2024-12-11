@@ -4,24 +4,13 @@ from pathlib import Path
 from typing import Any
 
 from utils import debugging
-from utils.asyncio_downloader import DownloadTask
+from utils.asyncio_downloader import DownloadTask, M3U8DownloadTask
 
 config_location = "./config"
 new_location = path.join(config_location, "new.txt")
 quit_location = path.join(config_location, "quit.txt")
 watching_location = path.join(config_location, "watching.txt")
 config_json_location = path.join(config_location, "config.json")
-
-valid_browsers = (
-    "chrome",
-    "chromium",
-    "opera",
-    "brave",
-    "edge",
-    "vivaldi",
-    "firefox",
-    "safari",
-)
 
 with open(config_json_location, "r", encoding="utf-8") as f:
     options: dict[str, Any] = json.load(f)
@@ -55,32 +44,6 @@ if notification_file_location is not None and not isinstance(
     exit(1)
 
 
-browser = options.get("browser", "chrome")
-if browser not in valid_browsers:
-    print(f"Invalid config: browser, must be one of {','.join(valid_browsers)}")
-    exit(1)
-assert isinstance(browser, str)
-
-email = options.get("email")
-if email is not None and not isinstance(email, str):
-    print(f"Invalid config: email, must be a string or null")
-    exit(1)
-
-password = options.get("password")
-if password is not None and not isinstance(password, str):
-    print(f"Invalid config: password, must be a string or null")
-    exit(1)
-
-cookies_location = options.get("cookies_location")
-if cookies_location is None and (email is None or password is None):
-    print(
-        f"Invalid config: either email and password or cookies_location must be provided"
-    )
-
-if cookies_location is not None and not isinstance(cookies_location, str):
-    print(f"Invalid config: cookies_location, must be a string or null")
-    exit(1)
-
 max_full_tries = options.get("max_full_tries", 50)
 if not isinstance(max_full_tries, int) or (
     max_full_tries != -1 and max_full_tries <= 0
@@ -100,9 +63,9 @@ if not isinstance(segments, int) or (segments <= 0):
     print(f"Invalid config: segments, must be a positive integer")
     exit(1)
 
-gogoanime_domain = options.get("gogoanime_domain", "gogoanime3.cc")
-if not isinstance(gogoanime_domain, str):
-    print("Invalid config: gogoanime_domain, must be a string")
+animenosub_domain = options.get("animenosub_domain", "animenosub.to")
+if not isinstance(animenosub_domain, str):
+    print("Invalid config: animenosub_domain, must be a string")
     exit(1)
 
 concurrent_downloads = options.get("concurrent_downloads", 6)
@@ -113,10 +76,12 @@ if not isinstance(concurrent_downloads, int) or (concurrent_downloads <= 0):
 debug_mode = options.get("debug_mode", False)
 if not isinstance(debug_mode, bool):
     print(f"Invalid config: debug_mode, must be true or false")
+    exit(1)
 
 if debug_mode:
     debugging.set_log_level(1)
 DownloadTask.set_max_concurrent_downloads(concurrent_downloads)
+M3U8DownloadTask.set_max_concurrent_downloads(concurrent_downloads)
 
 
 def user_end_download(filename: Path, success: bool, data: str):

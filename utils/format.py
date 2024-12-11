@@ -1,3 +1,6 @@
+from pathlib import Path
+import random
+import string
 import unicodedata
 
 
@@ -38,6 +41,17 @@ def format_time(time: float) -> str:
 
 def delta_time_str(start: float, end: float) -> str:
     return format_time(end - start)
+
+
+def random_name(N: int):
+    return "".join(random.choices(string.ascii_letters + string.digits, k=N))
+
+
+def new_random_file(parent: Path, extension: str):
+    name = random_name(20)
+    while (parent / (name + extension)).exists():
+        name = random_name(20)
+    return parent / (name + extension)
 
 
 # String formating

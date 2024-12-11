@@ -7,19 +7,12 @@ else:
 class AnimeParser(Parser):
     def __init__(self, contents: str):
         super().__init__(contents)
-        self.id = None
         self.name = None
         self.logo_url = None
 
     def handle_start(self, tag: str, attrs: AttrDict):
-        if attrs.get("id") == "movie_id" and attrs.get("value") is not None:
-            self.id = attrs["value"]
-            return
-
-        if (
-            tag == "img"
-            and self.curent_tag.parent.attrs.get("class") == "anime_info_body_bg"
-        ):
+        className = self.curent_tag.parent.attrs.get("class")
+        if tag == "img" and className is not None and className.find("thumb") != -1:
             self.logo_url = attrs.get("src")
 
     def handle_data(self, data: str):
@@ -29,6 +22,6 @@ class AnimeParser(Parser):
 
         if (
             self.curent_tag.tag == "h1"
-            and self.curent_tag.parent.attrs.get("class") == "anime_info_body_bg"
+            and self.curent_tag.attrs.get("class") == "entry-title"
         ):
             self.name = data

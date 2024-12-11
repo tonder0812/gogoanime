@@ -7,7 +7,6 @@ import httpx
 
 from anime import get_anime_info
 from config import download_path, user_end_download
-from cookies import load_cookies
 from downloader import download_anime
 from printer import AbstractPrinter, Printer
 from saving import Processing
@@ -106,8 +105,6 @@ def main():
 
         if not base_path.exists() or not base_path.is_dir():
             p.print("Download folder must exist")
-
-        client.cookies.update(load_cookies())
 
         info = get_anime_info(client, anime_id)
         while info is None:

@@ -7,7 +7,6 @@ import httpx
 
 from anime import AnimeInfo, get_anime_info
 from config import download_path, quit_location
-from cookies import load_cookies
 from downloader import download_anime
 from printer import AbstractPrinter, Printer
 from printer.console import set_title
@@ -88,14 +87,13 @@ def raise_for_quit(p: AbstractPrinter):
 
 
 def main():
-    p = Printer()
 
     client = httpx.Client(
         limits=httpx.Limits(max_connections=None, max_keepalive_connections=None),
         follow_redirects=True,
     )
-    client.cookies.update(load_cookies())
 
+    p = Printer()
     p.set("timer", CHECK_INTERVAL)
 
     set_processing(p)

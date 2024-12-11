@@ -1,20 +1,155 @@
+import string
 import httpx
 
-from config import gogoanime_domain
-from parsers import EpListParser, VideoLinkParser
+from config import animenosub_domain
+from parsers import EpListParser
+from parsers.common import Parser
+from parsers.video_link import VideoProviderLinkParser
+import re
+from config import max_full_tries
+
+
+def int2base(x: int, base: int, digs: str = string.digits + string.ascii_letters):
+    if x < 0:
+        sign = -1
+    elif x == 0:
+        return digs[0]
+    else:
+        sign = 1
+
+    x *= sign
+    digits: list[str] = []
+
+    while x:
+        digits.append(digs[int(x % base)])
+        x = int(x / base)
+
+    if sign < 0:
+        digits.append("-")
+
+    digits.reverse()
+
+    return "".join(digits)
+
+
+def decode_Moon_m3u8(data: str):
+    matches = re.findall(
+        r"}\('(.*?[^\\])'\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*'(.*?[^\\])'", data
+    )
+    assert len(matches) == 1
+    matc: tuple[str, str, str, str] = matches[0]
+    assert isinstance(matc, tuple)
+    p, a, c, k = matc
+    assert isinstance(p, str)
+    assert isinstance(a, str)
+    assert isinstance(c, str)
+    assert isinstance(k, str)
+    a = int(a)
+    c = int(c)
+    k = k.split("|")
+    while c >= 0:
+        c -= 1
+        if k[c]:
+            r = re.compile(rf"\b{int2base(c,a)}\b")
+            p = r.sub(k[c], p)
+    m3u8_matches = re.findall(r"sources:\s*\[\s*{\s*file:\s*\"(.*?)\"", p)
+    assert len(m3u8_matches) == 1
+    m3u8_match = m3u8_matches[0]
+    assert isinstance(m3u8_match, str)
+    return m3u8_match
+
+
+class MoonM3u8Parser(Parser):
+    def __init__(self, contents: str) -> None:
+        super().__init__(contents)
+        self.m3u8_link: str | None = None
+
+    def handle_data(self, data: str) -> None:
+        data = data.strip()
+        if self.curent_tag.tag == "script" and data.startswith("eval"):
+            self.m3u8_link = decode_Moon_m3u8(data)
 
 
 def get_episode_download_link(
     client: httpx.Client, links: dict[str, str], episode: str
 ) -> tuple[str, str] | None:
     try:
-        r = client.get(f"https://{gogoanime_domain}{links[episode]}")
-        with VideoLinkParser(r.content.decode()) as p:
-            r.raise_for_status()
-            if p.download_link is None:
+        r = client.get(
+            links[episode],
+            headers={
+                "Accept-Language": "en-GB,en;q=0.5",
+            },
+        )
+        r.raise_for_status()
+        with VideoProviderLinkParser(r.content.decode()) as p:
+            if p.link is None:
                 return None
-            assert p.resolution is not None
-            return p.download_link, p.resolution
+            r4 = httpx.get(
+                p.link,
+                headers={
+                    # "User-Agent": "Chrome",
+                    "Accept-Language": "en-GB,en;q=0.5",
+                },
+            )
+            # debug_log(f"moon content: {r4.content.decode()}")
+            matches = re.findall('iframe src="(.*?)"', r4.content.decode())
+            # assert len(matches) == 1
+            if len(matches) != 1:
+                return None
+            real_link = matches[0]
+            assert isinstance(real_link, str)
+            if real_link.startswith("//"):
+                real_link = "https:" + real_link
+            main_url: str | None = None
+            for _ in range(max_full_tries):
+                r2 = client.get(
+                    real_link,
+                    headers={
+                        "Sec-Fetch-Dest": "iframe",
+                        "Sec-Fetch-Mode": "navigate",
+                        "Sec-Fetch-Site": "cross-site",
+                        "Referer": "https://filemoon.sx/",
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                        "Accept-Language": "en-GB,en;q=0.5",
+                    },
+                )
+                r2.raise_for_status()
+
+                with MoonM3u8Parser(r2.content.decode()) as p2:
+                    if p2.m3u8_link:
+                        main_url = p2.m3u8_link
+                        break
+            # print(main_url)
+            if main_url is None:
+                return None
+
+            r3 = client.get(
+                main_url,
+                headers={
+                    "Sec-Fetch-Dest": "iframe",
+                    "Sec-Fetch-Mode": "navigate",
+                    "Sec-Fetch-Site": "cross-site",
+                    "Referer": "https://filemoon.sx/",
+                    "Accept-Language": "en-GB,en;q=0.5",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                },
+            )
+            resolutions = re.findall(
+                r"#EXT-X-STREAM-INF:.*?RESOLUTION=(\d+x\d+).*?\n(.*?)\n",
+                r3.content.decode(),
+            )
+            best_dimentions = 0
+            best_link: tuple[str, str] | None = None
+            for resolution, link in resolutions:
+                dim = resolution.split("x")
+                if len(dim) != 2:
+                    continue
+
+                dimentions = int(dim[0]) * int(dim[1])
+                if dimentions > best_dimentions:
+                    best_dimentions = dimentions
+                    best_link = link, resolution
+            return best_link
     except httpx.TimeoutException:
         return None
     except httpx.NetworkError:
@@ -36,9 +171,7 @@ def get_episodes_download_links(
 
 def get_episode_links(client: httpx.Client, anime_id: str) -> dict[str, str] | None:
     try:
-        r = client.get(
-            f"https://ajax.gogocdn.net/ajax/load-list-episode?id={anime_id}&ep_start=0&ep_end=100000"
-        )
+        r = client.get(f"https://{animenosub_domain}/anime/{anime_id}")
         with EpListParser(r.content.decode()) as p:
             r.raise_for_status()
             return p.links

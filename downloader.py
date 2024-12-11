@@ -10,7 +10,6 @@ from anime import AnimeInfo, get_anime_info
 from config import (
     max_full_tries,
     max_inner_tries,
-    segments,
     user_end_download,
     user_start_downloading,
     logo_format,
@@ -20,8 +19,13 @@ from config import (
 from episode import episode_order, get_episodes_to_download
 from printer import AbstractPrinter, FakePrinter
 from saving import Processing
-from utils.asyncio_downloader import SrcGeneratorType, SrcType, httpx_ranged_builder
-from utils.download import download_file_threaded
+from utils.asyncio_downloader import (
+    M3U8_builder,
+    SrcGeneratorType,
+    SrcType,
+    httpx_ranged_builder,
+)
+from utils.download import download_file_threaded, download_file_threaded_M3U8
 from utils.format import (
     generate_anime_dirname,
     generate_anime_logo_filename,
@@ -135,14 +139,13 @@ def download_episode(
     if client:
         newClient.cookies = client.cookies
 
-    t = download_file_threaded(
-        src=httpx_ranged_builder(download_url, client=newClient),
+    t = download_file_threaded_M3U8(
+        src=M3U8_builder(newClient, download_url, anime_folder),
         folder=anime_folder,
         filename=filename,
         desc=filename_desc,
         max_full_tries=max_full_tries,
         max_inner_tries=max_inner_tries,
-        segments=segments,
         printr=p,
         size_digits=9,
         cb_start=user_start_downloading,
@@ -201,6 +204,7 @@ def download_anime(
     os.makedirs(anime_folder, exist_ok=True)
 
     dowload_anime_logo(p, client, infos, anime_id, anime_name, anime_folder, threads)
+    # return True
 
     for epN, ep in enumerate(eps, 1):
         download_url = links_to_download.get(ep)

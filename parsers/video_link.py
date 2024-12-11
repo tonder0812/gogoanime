@@ -1,3 +1,6 @@
+import base64
+import re
+
 if __name__ == "__main__":
     from common import Parser
 else:
@@ -32,3 +35,25 @@ class VideoLinkParser(Parser):
                     )
                 self.best_resolution = resolution
                 self.resolution = data
+
+
+class VideoProviderLinkParser(Parser):
+    def __init__(self, contents: str):
+        super().__init__(contents)
+        self.link: str | None = None
+
+    def handle_data(self, data: str) -> None:
+        data = data.strip()
+        if (
+            self.curent_tag.tag == "option"
+            and data.startswith("SUB")
+            and data.endswith("Moon")
+        ):
+            encoded = self.curent_tag.attrs.get("value")
+            assert encoded is not None
+            matches = re.findall('src="(.*?)"', base64.b64decode(encoded).decode())
+            assert len(matches) == 1
+            self.link = matches[0]
+            assert isinstance(self.link, str)
+            if self.link.startswith("//"):
+                self.link = "https:" + self.link
