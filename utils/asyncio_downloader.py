@@ -1,6 +1,5 @@
 import itertools
 import math
-import re
 import subprocess
 import threading
 import time
@@ -9,14 +8,18 @@ from pathlib import Path
 from threading import Thread
 import traceback
 from typing import AsyncIterator, Awaitable, Callable, Iterable, Protocol
-from urllib.parse import urlparse
 
 import anyio
 import httpx
+import m3u8
 
 from printer import AbstractPrinter
 from utils.debugging import debug_log
-from utils.format import delta_time_str, new_random_file
+from utils.format import delta_time_str
+from utils.m3u8_utils import (
+    replace_m3u8_uris,
+    select_best_playlist,
+)
 from utils.prediction import Prediction
 
 
@@ -30,7 +33,9 @@ def tries_iterator(tries: int) -> Iterable[int]:
 async def get_download_size(
     client: httpx.AsyncClient, url: str, tries: int
 ) -> int | None:
-    for _ in tries_iterator(tries):
+    for tri in tries_iterator(tries):
+        debug_log("================", 1)
+        debug_log(f"get size for {url} [{tri}]", 1)
         try:
             head = await client.head(url)
             head.raise_for_status()
@@ -44,6 +49,8 @@ async def get_download_size(
         except anyio.EndOfStream:
             pass
         except httpx.TimeoutException:
+            debug_log("===============")
+            debug_log(f"download size timeout for {url}")
             pass
         except httpx.NetworkError:
             pass
@@ -86,7 +93,10 @@ ContentType = AsyncIterator[bytes | None]
 ContentGeneratorType = Callable[[int, int], ContentType]
 ContentGeneratorTypeNoSize = Callable[[], ContentType]
 SrcType = tuple[int | None, bool, ContentGeneratorType]
-M3U8SrcType = tuple[list[Path] | None, list[int], str, list[ContentGeneratorTypeNoSize]]
+M3U8SrcType = tuple[
+    list[Path] | None, Path, list[Path], list[int], list[ContentGeneratorTypeNoSize]
+]
+# tmp_files, tmp_dir, m3u8_files, sizes, content
 
 
 # SrcGeneratorType = Callable[[int, int], Awaitable[SrcType]]
@@ -395,6 +405,11 @@ def downloader_func(
         ) as r:
             if not r.headers["Content-Length"].startswith(f"{expected_size}"):
                 raise Exception("")
+            debug_log("================", 1)
+            debug_log(
+                f"Download {link} [{r.headers["Content-Length"]} / {expected_size}]", 1
+            )
+            debug_log(r.headers, 1)
             async for chunk in r.aiter_bytes(1024):
                 if chunk:
                     yield chunk
@@ -402,37 +417,102 @@ def downloader_func(
     return download
 
 
+async def downloader_funcs_from_url_list(
+    c: httpx.AsyncClient, urls: list[str], tries: int
+):
+    sizes: list[int] = []
+    funcs: list[ContentGeneratorTypeNoSize] = []
+    for url in urls:
+        size = await get_download_size(c, url, tries)
+        if size is None:
+            return None, None
+        sizes.append(size)
+        funcs.append(downloader_func(c, url, size))
+    return sizes, funcs
+
+
+async def extend_tmp_files_sizes_and_download_funcs(
+    c: httpx.AsyncClient,
+    tmp_files: list[Path],
+    files: list[Path],
+    sizes: list[int],
+    urls: list[str],
+    downloader_funcs: list[ContentGeneratorTypeNoSize],
+    tries: int,
+):
+    tmp_files.extend(files)
+    size, funcs = await downloader_funcs_from_url_list(c, urls, tries)
+    if size is None or funcs is None:
+        return False
+    sizes.extend(size)
+    downloader_funcs.extend(funcs)
+    return True
+
+
 def M3U8_builder(
-    c: httpx.AsyncClient, link: str, dest_folder: Path
+    c: httpx.AsyncClient, link: str, dest_folder: Path, filename: str
 ) -> M3U8SrcGeneratorType:
 
     # print(matches)
     async def src(tries: int) -> M3U8SrcType:
-        r = await c.get(
+        headers = {
+            "Accept-Language": "en-GB,en;q=0.5",
+        }
+        master = m3u8.load(
             link,
-            headers={
-                "Accept-Language": "en-GB,en;q=0.5",
-            },
+            headers=headers,
         )
-        # print(r.content)
-        m3u8_content = r.content.decode()
-        matches: list[tuple[str, str]] = re.findall('(https://.*?)("|\n)', m3u8_content)
+        assert master.is_variant
+        playlist = select_best_playlist(master)
+        assert playlist.uri
+        master.playlists = m3u8.PlaylistList([playlist])  # force only best
+        master_path = (dest_folder / filename).with_suffix(".m3u8")
+        video_path = (dest_folder / filename).with_suffix(".video.m3u8")
+        audio_path = (dest_folder / filename).with_suffix(".audio.m3u8")
+        tmp_dir = (dest_folder / filename).with_suffix(".tmp")
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        video = m3u8.load(
+            playlist.uri,
+            headers=headers,
+        )
+        audio: m3u8.M3U8 | None = None
+        playlist.uri = str(video_path).replace("\\", "/")
+        if playlist.stream_info.audio:
+            for media in master.media:
+                if media.group_id == playlist.stream_info.audio:
+                    assert media.uri
+                    audio = m3u8.load(
+                        media.uri,
+                        headers=headers,
+                    )
+                    media.uri = str(audio_path).replace("\\", "/")
 
-        tmps: list[Path] = []
+        master.dump(master_path)
+        tmp_files: list[Path] = []
         sizes: list[int] = []
-        downloader_functions: list[ContentGeneratorTypeNoSize] = []
-        for match, _ in matches:
-            path = Path(urlparse(match).path)
-            extension = path.suffix
-            tmp_file = new_random_file(dest_folder, extension)
-            size = await get_download_size(c, match, tries)
-            if size is None:
-                return None, [], "", []
-            downloader_functions.append(downloader_func(c, match, size))
-            sizes.append(size)
-            tmps.append(tmp_file)
-            m3u8_content = m3u8_content.replace(match, str(tmp_file).replace("\\", "/"))
-        return (tmps, sizes, m3u8_content, downloader_functions)
+        downloader_funcs: list[ContentGeneratorTypeNoSize] = []
+        files, urls = replace_m3u8_uris("videok", video.keys, tmp_dir)
+        await extend_tmp_files_sizes_and_download_funcs(
+            c, tmp_files, files, sizes, urls, downloader_funcs, tries
+        )
+        files, urls = replace_m3u8_uris("video", video.segments, tmp_dir)
+        await extend_tmp_files_sizes_and_download_funcs(
+            c, tmp_files, files, sizes, urls, downloader_funcs, tries
+        )
+        video.dump(video_path)
+        m3u8_files = [master_path, video_path]
+        if audio:
+            files, urls = replace_m3u8_uris("audiok", audio.keys, tmp_dir)
+            await extend_tmp_files_sizes_and_download_funcs(
+                c, tmp_files, files, sizes, urls, downloader_funcs, tries
+            )
+            files, urls = replace_m3u8_uris("audio", audio.segments, tmp_dir)
+            await extend_tmp_files_sizes_and_download_funcs(
+                c, tmp_files, files, sizes, urls, downloader_funcs, tries
+            )
+            m3u8_files.append(audio_path)
+            audio.dump(audio_path)
+        return (tmp_files, tmp_dir, m3u8_files, sizes, downloader_funcs)
 
     return src
 
@@ -457,10 +537,11 @@ class M3U8DownloadTask:
         self.download_id = download_id
 
         self.files: list[Path] = []
+        self.tmp_folder = None
         self.sizes: list[int] = []
         self.size = 0
         self.filename = filename
-        self.m3u8_file = filename.with_suffix(".m3u8")
+        self.m3u8_files: list[Path] = []
 
         self.segments = 0
         self.received = 0
@@ -478,13 +559,18 @@ class M3U8DownloadTask:
         if self.start_time == 0:
             self.start_time = time.time()
 
-        files, self.sizes, m3u8_content, self.content = await self.src(tries)
+        files, self.tmp_folder, self.m3u8_files, self.sizes, self.content = (
+            await self.src(tries)
+        )
         if files is None:
             return False
 
-        assert len(files) == len(self.sizes) and len(files) == len(self.content)
+        assert (
+            len(files) == len(self.sizes)
+            and len(files) == len(self.content)
+            and len(self.m3u8_files) > 0
+        )
 
-        self.m3u8_file.write_text(m3u8_content)
         self.files = files
         self.segments = len(self.files)
         self.size = sum(self.sizes)
@@ -523,7 +609,7 @@ class M3U8DownloadTask:
                         "-allowed_extensions",
                         "ALL",
                         "-i",
-                        self.m3u8_file.absolute(),
+                        self.m3u8_files[0].absolute(),
                         "-codec",
                         "copy",
                         "-bsf:a",
@@ -553,16 +639,18 @@ class M3U8DownloadTask:
 
             for file in self.files:
                 file.unlink(missing_ok=True)
-            self.m3u8_file.unlink(missing_ok=True)
+            if self.tmp_folder is not None:
+                self.tmp_folder.rmdir()
+            for m3u8_file in self.m3u8_files:
+                m3u8_file.unlink(missing_ok=True)
         if self.adquired_semaphore:
             self.sem.release()
 
     async def multidown(self, tries: int, segment: int) -> bool:
         assert self.content is not None
 
-        count = 0
-
         for _ in tries_iterator(tries):
+            count = 0
             try:
                 with self.files[segment].open("wb") as f:
                     async for chunk in self.content[segment]():
@@ -582,7 +670,7 @@ class M3U8DownloadTask:
                     debug_log(
                         f"finished segment {segment} {count}/{self.sizes[segment]}", 1
                     )
-                    if count == self.sizes[segment]:
+                    if count >= self.sizes[segment]:
                         self.completed[segment] = True
                         return True
             except Exception:

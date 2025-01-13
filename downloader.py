@@ -135,12 +135,13 @@ def download_episode(
     newClient = httpx.AsyncClient(
         limits=httpx.Limits(max_connections=None, max_keepalive_connections=None),
         follow_redirects=True,
+        timeout=10.0,
     )
     if client:
         newClient.cookies = client.cookies
 
     t = download_file_threaded_M3U8(
-        src=M3U8_builder(newClient, download_url, anime_folder),
+        src=M3U8_builder(newClient, download_url, anime_folder, filename),
         folder=anime_folder,
         filename=filename,
         desc=filename_desc,

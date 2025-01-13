@@ -7,6 +7,7 @@ from parsers.common import Parser
 from parsers.video_link import VideoProviderLinkParser
 import re
 from config import max_full_tries
+import m3u8
 
 
 def int2base(x: int, base: int, digs: str = string.digits + string.ascii_letters):
@@ -123,33 +124,21 @@ def get_episode_download_link(
             if main_url is None:
                 return None
 
-            r3 = client.get(
-                main_url,
-                headers={
-                    "Sec-Fetch-Dest": "iframe",
-                    "Sec-Fetch-Mode": "navigate",
-                    "Sec-Fetch-Site": "cross-site",
-                    "Referer": "https://filemoon.sx/",
-                    "Accept-Language": "en-GB,en;q=0.5",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-                },
-            )
-            resolutions = re.findall(
-                r"#EXT-X-STREAM-INF:.*?RESOLUTION=(\d+x\d+).*?\n(.*?)\n",
-                r3.content.decode(),
-            )
+            main_m3u8 = m3u8.load(main_url)
+            if not main_m3u8.is_variant:
+                return main_url, ""
             best_dimentions = 0
-            best_link: tuple[str, str] | None = None
-            for resolution, link in resolutions:
-                dim = resolution.split("x")
-                if len(dim) != 2:
-                    continue
-
+            best_resolution: str | None = None
+            for playlist in main_m3u8.playlists:
+                dim = playlist.stream_info.resolution
+                assert dim
                 dimentions = int(dim[0]) * int(dim[1])
                 if dimentions > best_dimentions:
                     best_dimentions = dimentions
-                    best_link = link, resolution
-            return best_link
+                    best_resolution = f"{dim[0]}x{dim[1]}"
+            if best_resolution is None:
+                return None
+            return main_url, best_resolution
     except httpx.TimeoutException:
         return None
     except httpx.NetworkError:

@@ -318,6 +318,8 @@ def download_file_M3U8(
         download_id=download_id,
     )
     try:
+        debug_log("========================================================")
+        debug_log(f"[{download_id}] start")
         success = asyncio.run(
             run_download_M3U8(task, max_full_tries, max_inner_tries, cb_start, cb_data)
         )
