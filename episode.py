@@ -83,6 +83,7 @@ def get_episode_download_link(
         )
         r.raise_for_status()
         with VideoProviderLinkParser(r.content.decode()) as p:
+            print(p.link)
             if p.link is None:
                 return None
             r4 = httpx.get(
@@ -92,6 +93,14 @@ def get_episode_download_link(
                     "Accept-Language": "en-GB,en;q=0.5",
                 },
             )
+            if "location" in r4.headers:
+                r4 = httpx.get(
+                    r4.headers["location"],
+                    headers={
+                        # "User-Agent": "Chrome",
+                        "Accept-Language": "en-GB,en;q=0.5",
+                    },
+                )
             # debug_log(f"moon content: {r4.content.decode()}")
             matches = re.findall('iframe src="(.*?)"', r4.content.decode())
             # assert len(matches) == 1
